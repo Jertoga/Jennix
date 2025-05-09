@@ -19,6 +19,7 @@
                 <li><a href="gallery.html">Gallery</a></li>
                 <li><a href="forum.html">Forum</a></li>
                 <li><a href="about.html">About</a></li>
+                <li><button class="login-button" onclick="openLoginModal()">Log In</button></li>
             </ul>
         </nav>
     </header>
@@ -31,23 +32,18 @@
         </div>
     </section>
 
-    <section id="auth-section">
-        <!-- Registratieformulier -->
-        <h3>Sign Up</h3>
-        <form id="signUpForm">
-            <input type="email" id="signUpEmail" placeholder="Enter your email" required />
-            <input type="password" id="signUpPassword" placeholder="Enter your password" required />
-            <button type="submit">Sign Up</button>
-        </form>
-
-        <!-- Inlogformulier -->
-        <h3>Sign In</h3>
-        <form id="signInForm">
-            <input type="email" id="signInEmail" placeholder="Enter your email" required />
-            <input type="password" id="signInPassword" placeholder="Enter your password" required />
-            <button type="submit">Sign In</button>
-        </form>
-    </section>
+    <!-- Modal voor inloggen -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeLoginModal()">&times;</span>
+            <h3>Sign In</h3>
+            <form id="signInForm">
+                <input type="email" id="signInEmail" placeholder="Enter your email" required />
+                <input type="password" id="signInPassword" placeholder="Enter your password" required />
+                <button type="submit">Sign In</button>
+            </form>
+        </div>
+    </div>
 
     <footer>
         <p>&copy; 2025 Jennix. All rights reserved.</p>
@@ -55,7 +51,7 @@
 
     <script type="module">
         // Firebase configuratie en functies
-        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-auth.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-auth.js";
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-app.js";
 
         // Firebase config
@@ -72,21 +68,6 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
 
-        // Functie om een account aan te maken
-        function signUp(email, password) {
-            createUserWithEmailAndPassword(auth, email, password)
-                .then((userCredential) => {
-                    const user = userCredential.user;
-                    console.log("Account aangemaakt voor:", user.email);
-                    window.location.href = "forum.html";  // Doorsturen naar forum na registratie
-                })
-                .catch((error) => {
-                    const errorCode = error.code;
-                    const errorMessage = error.message;
-                    console.log("Error tijdens registratie:", errorCode, errorMessage);
-                });
-        }
-
         // Functie om in te loggen
         function signIn(email, password) {
             signInWithEmailAndPassword(auth, email, password)
@@ -102,24 +83,17 @@
                 });
         }
 
-        // Functie om inlogstatus te controleren en gebruikers door te sturen
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                console.log("Gebruiker is ingelogd:", user.email);
-                // Eventuele doorsturingen kunnen hier worden uitgevoerd
-            } else {
-                console.log("Geen gebruiker ingelogd");
-            }
-        });
+        // Functie om het inlogmodal te openen
+        function openLoginModal() {
+            document.getElementById("loginModal").style.display = "block";
+        }
 
-        // Event listeners voor de formulieren
-        document.getElementById("signUpForm").addEventListener("submit", (e) => {
-            e.preventDefault();
-            const email = document.getElementById("signUpEmail").value;
-            const password = document.getElementById("signUpPassword").value;
-            signUp(email, password);
-        });
+        // Functie om het inlogmodal te sluiten
+        function closeLoginModal() {
+            document.getElementById("loginModal").style.display = "none";
+        }
 
+        // Event listener voor het inlogformulier
         document.getElementById("signInForm").addEventListener("submit", (e) => {
             e.preventDefault();
             const email = document.getElementById("signInEmail").value;
