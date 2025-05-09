@@ -31,10 +31,101 @@
         </div>
     </section>
 
+    <section id="auth-section">
+        <!-- Registratieformulier -->
+        <h3>Sign Up</h3>
+        <form id="signUpForm">
+            <input type="email" id="signUpEmail" placeholder="Enter your email" required />
+            <input type="password" id="signUpPassword" placeholder="Enter your password" required />
+            <button type="submit">Sign Up</button>
+        </form>
+
+        <!-- Inlogformulier -->
+        <h3>Sign In</h3>
+        <form id="signInForm">
+            <input type="email" id="signInEmail" placeholder="Enter your email" required />
+            <input type="password" id="signInPassword" placeholder="Enter your password" required />
+            <button type="submit">Sign In</button>
+        </form>
+    </section>
+
     <footer>
         <p>&copy; 2025 Jennix. All rights reserved.</p>
     </footer>
 
-    <script src="main.js"></script>
+    <script type="module">
+        // Firebase configuratie en functies
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-auth.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-app.js";
+
+        // Firebase config
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_AUTH_DOMAIN",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        // Initialiseer Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        // Functie om een account aan te maken
+        function signUp(email, password) {
+            createUserWithEmailAndPassword(auth, email, password)
+                .then((userCredential) => {
+                    const user = userCredential.user;
+                    console.log("Account aangemaakt voor:", user.email);
+                    window.location.href = "forum.html";  // Doorsturen naar forum na registratie
+                })
+                .catch((error) => {
+                    const errorCode = error.code;
+                    const errorMessage = error.message;
+                    console.log("Error tijdens registratie:", errorCode, errorMessage);
+                });
+        }
+
+        // Functie om in te loggen
+        function signIn(email, password) {
+            signInWithEmailAndPassword(auth, email, password)
+                .then((userCredential) => {
+                    const user = userCredential.user;
+                    console.log("Ingelogd als:", user.email);
+                    window.location.href = "forum.html";  // Doorsturen naar forum na inloggen
+                })
+                .catch((error) => {
+                    const errorCode = error.code;
+                    const errorMessage = error.message;
+                    console.log("Error tijdens inloggen:", errorCode, errorMessage);
+                });
+        }
+
+        // Functie om inlogstatus te controleren en gebruikers door te sturen
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                console.log("Gebruiker is ingelogd:", user.email);
+                // Eventuele doorsturingen kunnen hier worden uitgevoerd
+            } else {
+                console.log("Geen gebruiker ingelogd");
+            }
+        });
+
+        // Event listeners voor de formulieren
+        document.getElementById("signUpForm").addEventListener("submit", (e) => {
+            e.preventDefault();
+            const email = document.getElementById("signUpEmail").value;
+            const password = document.getElementById("signUpPassword").value;
+            signUp(email, password);
+        });
+
+        document.getElementById("signInForm").addEventListener("submit", (e) => {
+            e.preventDefault();
+            const email = document.getElementById("signInEmail").value;
+            const password = document.getElementById("signInPassword").value;
+            signIn(email, password);
+        });
+    </script>
 </body>
 </html>
