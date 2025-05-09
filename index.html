@@ -18,8 +18,7 @@
                 <li><a href="news.html">News</a></li>
                 <li><a href="gallery.html">Gallery</a></li>
                 <li><a href="forum.html">Forum</a></li>
-                <li><a href="about.html">About</a></li>
-                <li><button class="login-button" onclick="openLoginModal()">Log In</button></li>
+                <li><button class="sign-in-button" onclick="openSignInModal()">Sign In</button></li>
             </ul>
         </nav>
     </header>
@@ -32,16 +31,31 @@
         </div>
     </section>
 
-    <!-- Modal voor inloggen -->
-    <div id="loginModal" class="modal">
+    <!-- Modal voor Sign In / Sign Up -->
+    <div id="signInModal" class="modal">
         <div class="modal-content">
-            <span class="close-button" onclick="closeLoginModal()">&times;</span>
-            <h3>Sign In</h3>
+            <span class="close-button" onclick="closeSignInModal()">&times;</span>
+            <h3>Sign In to Jennix</h3>
             <form id="signInForm">
                 <input type="email" id="signInEmail" placeholder="Enter your email" required />
                 <input type="password" id="signInPassword" placeholder="Enter your password" required />
                 <button type="submit">Sign In</button>
             </form>
+            <p class="switch-text">Don't have an account? <a href="#" onclick="switchToSignUp()">Sign Up</a></p>
+        </div>
+    </div>
+
+    <!-- Modal voor Sign Up -->
+    <div id="signUpModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeSignUpModal()">&times;</span>
+            <h3>Create a Jennix Account</h3>
+            <form id="signUpForm">
+                <input type="email" id="signUpEmail" placeholder="Enter your email" required />
+                <input type="password" id="signUpPassword" placeholder="Choose a password" required />
+                <button type="submit">Sign Up</button>
+            </form>
+            <p class="switch-text">Already have an account? <a href="#" onclick="switchToSignIn()">Sign In</a></p>
         </div>
     </div>
 

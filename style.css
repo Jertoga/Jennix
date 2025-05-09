@@ -126,6 +126,7 @@ footer {
     width: 400px;
     max-width: 90%;
     color: #fff;
+    position: relative;
 }
 
 .close-btn {
@@ -169,6 +170,22 @@ footer {
     background-color: #ffbb33;
 }
 
+/* Extra voor switch-link tussen login/register */
+.switch-text {
+    text-align: center;
+    margin-top: 10px;
+    font-size: 0.9rem;
+}
+
+.switch-text a {
+    color: #f7a800;
+    text-decoration: none;
+}
+
+.switch-text a:hover {
+    text-decoration: underline;
+}
+
 @media (max-width: 768px) {
     header .logo h1 {
         font-size: 2rem;
@@ -180,5 +197,10 @@ footer {
 
     .hero-content p {
         font-size: 1rem;
+    }
+
+    .modal-content {
+        width: 90%;
+        padding: 15px;
     }
 }
