@@ -24,9 +24,8 @@ body {
 header {
     background-color: #1e1e1e;
     padding: 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    text-align: center;
+    position: relative; /* Zorgt ervoor dat de knop in de juiste positie kan worden geplaatst */
 }
 
 header .logo h1 {
@@ -88,6 +87,25 @@ header nav ul li a.active {
     background-color: #ffbb33;
 }
 
+/* Sign In button specific styles */
+.sign-in-button {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background-color: #f7a800;
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: background-color 0.3s;
+}
+
+.sign-in-button:hover {
+    background-color: #ffbb33;
+}
+
 main.content {
     flex: 1;
     padding: 40px;
@@ -126,7 +144,7 @@ footer {
     position: relative;
 }
 
-.close-button {
+.close-btn {
     color: #fff;
     font-size: 1.5rem;
     position: absolute;
@@ -201,19 +219,3 @@ footer {
         padding: 15px;
     }
 }
-
-.sign-in-button {
-    background-color: #f7a800;
-    border: none;
-    color: white;
-    font-size: 1rem;
-    padding: 10px 20px;
-    cursor: pointer;
-    border-radius: 5px;
-    transition: background-color 0.3s;
-}
-
-.sign-in-button:hover {
-    background-color: #ffbb33;
-}
-
