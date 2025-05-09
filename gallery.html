@@ -1,3 +1,5 @@
+<!-- gallery.html -->
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,31 +7,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gallery | Jennix</title>
     <link rel="stylesheet" href="style.css">
+    <script type="module" src="firebase.js"></script> <!-- Voeg dit toe -->
 </head>
-
-<script type="module">
-  // Import the functions you need from the SDKs you need
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-app.js";
-  import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-analytics.js";
-  // TODO: Add SDKs for Firebase products that you want to use
-  // https://firebase.google.com/docs/web/setup#available-libraries
-
-  // Your web app's Firebase configuration
-  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-  const firebaseConfig = {
-    apiKey: "AIzaSyDsb7m4EijaU3NNxwoos8y6egI29nfbChk",
-    authDomain: "jennix-777e1.firebaseapp.com",
-    projectId: "jennix-777e1",
-    storageBucket: "jennix-777e1.firebasestorage.app",
-    messagingSenderId: "673075142639",
-    appId: "1:673075142639:web:ea93e3ae1b244463ca201a",
-    measurementId: "G-HKJ85NVGF4"
-  };
-
-  // Initialize Firebase
-  const app = initializeApp(firebaseConfig);
-  const analytics = getAnalytics(app);
-</script>
 
 <body>
     <header>
@@ -51,11 +30,33 @@
     <main class="content">
         <h2>Photo Gallery</h2>
         <p>Check out beautiful pictures of Jenna Ortega!</p>
-        <!-- Add your image grid here -->
+
+        <!-- Formulier om afbeeldingen te uploaden -->
+        <input type="file" id="fileInput" accept="image/*">
+        <button onclick="handleImageUpload()">Upload Image</button>
+
+        <div id="imageGallery">
+            <!-- Afbeeldingen zullen hier worden weergegeven -->
+        </div>
     </main>
 
     <footer>
         <p>&copy; 2025 Jennix. All rights reserved.</p>
     </footer>
+
+    <script>
+        import { uploadImage } from './firebase.js';
+
+        function handleImageUpload() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+
+            if (file) {
+                uploadImage(file);
+            } else {
+                alert("Please select a file to upload.");
+            }
+        }
+    </script>
 </body>
 </html>
