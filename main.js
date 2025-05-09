@@ -1,3 +1,4 @@
+// Functie om de community te joinen
 function joinCommunity() {
     alert("Thanks for joining the Jenna Ortega fan community!");
 }
@@ -63,10 +64,10 @@ document.getElementById("signInForm").addEventListener("submit", (e) => {
     signInWithEmailAndPassword(auth, email, password)
         .then((userCredential) => {
             alert("Logged in as: " + userCredential.user.email);
-            window.location.href = "forum.html";
+            window.location.href = "forum.html"; // Doorsturen naar het forum
         })
         .catch((error) => {
-            alert("Error: " + error.message);
+            alert("Error: " + error.message); // Foutmelding tonen bij inlogfout
         });
 });
 
@@ -77,11 +78,11 @@ document.getElementById("signUpForm").addEventListener("submit", (e) => {
     const password = document.getElementById("signUpPassword").value;
     createUserWithEmailAndPassword(auth, email, password)
         .then((userCredential) => {
-            alert("Account created: " + userCredential.user.email);
+            alert("Account created: " + userCredential.user.email); // Account gecreëerd
             closeSignUpModal();
-            openSignInModal();
+            openSignInModal(); // Schakel naar het inlogscherm na registratie
         })
         .catch((error) => {
-            alert("Error: " + error.message);
+            alert("Error: " + error.message); // Foutmelding tonen bij registratiefout
         });
 });
