@@ -1,12 +1,6 @@
 // Firebase importeren (bovenaan)
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-app.js";
-import {
-    getAuth,
-    signInWithEmailAndPassword,
-    createUserWithEmailAndPassword,
-    onAuthStateChanged,
-    signOut
-} from "https://www.gstatic.com/firebasejs/11.7.1/firebase-auth.js";
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-auth.js";
 
 // Firebase configuratie
 const firebaseConfig = {
@@ -21,44 +15,33 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
-// Functie om de community te joinen
-function joinCommunity() {
-    alert("Thanks for joining the Jenna Ortega fan community!");
-}
-
 // Modal functies
 function openSignInModal() {
     document.getElementById("signInModal").style.display = "flex";
 }
-
 function closeSignInModal() {
     document.getElementById("signInModal").style.display = "none";
 }
-
 function openSignUpModal() {
     document.getElementById("signUpModal").style.display = "flex";
 }
-
 function closeSignUpModal() {
     document.getElementById("signUpModal").style.display = "none";
 }
-
 function switchToSignUp() {
     closeSignInModal();
     openSignUpModal();
 }
-
 function switchToSignIn() {
     closeSignUpModal();
     openSignInModal();
 }
-
 window.onclick = function(event) {
     if (event.target === document.getElementById("signInModal")) closeSignInModal();
     if (event.target === document.getElementById("signUpModal")) closeSignUpModal();
 };
 
-// Sign Up formulier
+// Sign Up
 document.getElementById("signUpForm").addEventListener("submit", function (e) {
     e.preventDefault();
     const email = document.getElementById("signUpEmail").value;
@@ -66,15 +49,15 @@ document.getElementById("signUpForm").addEventListener("submit", function (e) {
 
     createUserWithEmailAndPassword(auth, email, password)
         .then((userCredential) => {
-            alert("Account successfully created!");
+            alert("Account succesvol aangemaakt!");
             closeSignUpModal();
         })
         .catch((error) => {
-            alert("Error: " + error.message);
+            alert("Fout: " + error.message);
         });
 });
 
-// Sign In formulier
+// Sign In
 document.getElementById("signInForm").addEventListener("submit", function (e) {
     e.preventDefault();
     const email = document.getElementById("signInEmail").value;
@@ -82,52 +65,54 @@ document.getElementById("signInForm").addEventListener("submit", function (e) {
 
     signInWithEmailAndPassword(auth, email, password)
         .then((userCredential) => {
-            alert("Successfully signed in!");
+            alert("Ingelogd!");
             closeSignInModal();
             updateUI(userCredential.user);
         })
         .catch((error) => {
-            alert("Error: " + error.message);
+            alert("Fout: " + error.message);
         });
 });
 
-// UI bijwerken bij login/logout
+// UI aanpassen
 function updateUI(user) {
     const nav = document.querySelector("nav ul");
     const signInBtn = document.querySelector(".sign-in-button");
 
-    // Check of al een logout knop bestaat
-    if (!document.getElementById("logoutBtn")) {
-        // Verander tekst van de knop naar "Dashboard"
-        signInBtn.innerText = "Dashboard";
-        signInBtn.onclick = () => {
-            // Verwijs door naar dashboard als je dat hebt
-            window.location.href = "/dashboard.html"; // Pas dit pad aan als nodig
-        };
+    if (user) {
+        if (signInBtn) {
+            signInBtn.remove(); // Verwijder "Log in"
+        }
 
-        // Voeg log out knop toe
-        const logoutLi = document.createElement("li");
-        logoutLi.id = "logoutBtn";
-        logoutLi.innerHTML = `<button onclick="logout()" class="sign-in-button">Log Out</button>`;
-        nav.appendChild(logoutLi);
+        // Voeg "Dashboard"-knop toe
+        if (!document.getElementById("dashboardBtn")) {
+            const dashboardLi = document.createElement("li");
+            dashboardLi.id = "dashboardBtn";
+            dashboardLi.innerHTML = `<a href="/dashboard.html" class="sign-in-button">Dashboard</a>`;
+            nav.appendChild(dashboardLi);
+        }
+
+        // Voeg "Logout"-knop toe
+        if (!document.getElementById("logoutBtn")) {
+            const logoutLi = document.createElement("li");
+            logoutLi.id = "logoutBtn";
+            logoutLi.innerHTML = `<button onclick="logout()" class="sign-in-button">Log Out</button>`;
+            nav.appendChild(logoutLi);
+        }
     }
 }
 
-// Logout functie
+// Logout
 function logout() {
     signOut(auth).then(() => {
-        alert("Logged out");
+        alert("Uitgelogd");
         location.reload();
     });
 }
 
-// Check of user al is ingelogd
+// Check loginstatus
 onAuthStateChanged(auth, (user) => {
     if (user) {
         updateUI(user);
-
-        // Optional: console log email en tijd als je dat ergens nodig hebt
-        const loginTime = new Date().toLocaleTimeString();
-        console.log("Ingelogd als:", user.email, "om", loginTime);
     }
 });
