@@ -56,7 +56,7 @@ header nav ul li a.active {
 }
 
 .hero {
-    background-image: url('../images/hero.jpg');
+    background-image: url('https://wwd.com/wp-content/uploads/2025/02/Jenna-Ortega-Versace-SNL-50-Concert908361.jpg');
     background-size: cover;
     background-position: center;
     flex: 1;
