@@ -1,118 +1,204 @@
-// Firebase importeren (bovenaan)
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-auth.js";
+// forum.test.js
+import { jest } from '@jest/globals';
 
-// Firebase configuratie
-const firebaseConfig = {
-    apiKey: "JOUW_API_KEY",
-    authDomain: "JOUW_PROJECT_ID.firebaseapp.com",
-    projectId: "JOUW_PROJECT_ID",
-    storageBucket: "JOUW_PROJECT_ID.appspot.com",
-    messagingSenderId: "JOUW_SENDER_ID",
-    appId: "JOUW_APP_ID"
-};
+// Mock Firebase modules
+jest.mock('https://www.gstatic.com/firebasejs/11.7.1/firebase-app.js', () => ({
+  initializeApp: jest.fn(() => ({}))
+}));
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
+jest.mock('https://www.gstatic.com/firebasejs/11.7.1/firebase-auth.js', () => ({
+  getAuth: jest.fn(() => ({
+    currentUser: null
+  })),
+  signInWithEmailAndPassword: jest.fn(),
+  createUserWithEmailAndPassword: jest.fn(),
+  onAuthStateChanged: jest.fn(),
+  signOut: jest.fn()
+}));
 
-// Modal functies
-function openSignInModal() {
-    document.getElementById("signInModal").style.display = "flex";
-}
-function closeSignInModal() {
-    document.getElementById("signInModal").style.display = "none";
-}
-function openSignUpModal() {
-    document.getElementById("signUpModal").style.display = "flex";
-}
-function closeSignUpModal() {
-    document.getElementById("signUpModal").style.display = "none";
-}
-function switchToSignUp() {
-    closeSignInModal();
-    openSignUpModal();
-}
-function switchToSignIn() {
-    closeSignUpModal();
-    openSignInModal();
-}
-window.onclick = function(event) {
-    if (event.target === document.getElementById("signInModal")) closeSignInModal();
-    if (event.target === document.getElementById("signUpModal")) closeSignUpModal();
-};
+jest.mock('https://www.gstatic.com/firebasejs/11.7.1/firebase-firestore.js', () => ({
+  getFirestore: jest.fn(() => ({})),
+  collection: jest.fn(),
+  addDoc: jest.fn(),
+  onSnapshot: jest.fn(),
+  query: jest.fn(),
+  orderBy: jest.fn(),
+  setDoc: jest.fn(),
+  doc: jest.fn(),
+  getDoc: jest.fn()
+}));
 
-// Sign Up
-document.getElementById("signUpForm").addEventListener("submit", function (e) {
-    e.preventDefault();
-    const email = document.getElementById("signUpEmail").value;
-    const password = document.getElementById("signUpPassword").value;
+// Import Firebase modules for accessing in tests
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.7.1/firebase-app.js';
+import { 
+  getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, 
+  onAuthStateChanged, signOut 
+} from 'https://www.gstatic.com/firebasejs/11.7.1/firebase-auth.js';
+import { 
+  getFirestore, collection, addDoc, onSnapshot, 
+  query, orderBy, setDoc, doc, getDoc 
+} from 'https://www.gstatic.com/firebasejs/11.7.1/firebase-firestore.js';
 
-    createUserWithEmailAndPassword(auth, email, password)
-        .then((userCredential) => {
-            alert("Account succesvol aangemaakt!");
-            closeSignUpModal();
-        })
-        .catch((error) => {
-            alert("Fout: " + error.message);
-        });
-});
+describe('Jennix Forum Functionality', () => {
+  // Setup DOM elements
+  beforeEach(() => {
+    document.body.innerHTML = `
+      <button id="authButton" class="sign-in-button">Sign In</button>
+      <button id="logoutBtn">Log Out</button>
+      <section id="forumSection" style="display:none;">
+        <textarea id="postText"></textarea>
+        <button id="postBtn">Post</button>
+        <div id="posts"></div>
+      </section>
+      <form id="signInForm">
+        <input type="email" id="signInEmail" />
+        <input type="password" id="signInPassword" />
+      </form>
+      <form id="signUpForm">
+        <input type="text" id="signUpUsername" />
+        <input type="email" id="signUpEmail" />
+        <input type="password" id="signUpPassword" />
+      </form>
+      <div id="signInModal" class="modal"></div>
+      <div id="signUpModal" class="modal"></div>
+    `;
+  });
 
-// Sign In
-document.getElementById("signInForm").addEventListener("submit", function (e) {
-    e.preventDefault();
-    const email = document.getElementById("signInEmail").value;
-    const password = document.getElementById("signInPassword").value;
+  // Clean up after each test
+  afterEach(() => {
+    jest.resetAllMocks();
+  });
 
-    signInWithEmailAndPassword(auth, email, password)
-        .then((userCredential) => {
-            alert("Ingelogd!");
-            closeSignInModal();
-            updateUI(userCredential.user);
-        })
-        .catch((error) => {
-            alert("Fout: " + error.message);
-        });
-});
-
-// UI aanpassen
-function updateUI(user) {
-    const nav = document.querySelector("nav ul");
-    const signInBtn = document.querySelector(".sign-in-button");
-
-    if (user) {
-        if (signInBtn) {
-            signInBtn.remove(); // Verwijder "Log in"
-        }
-
-        // Voeg "Dashboard"-knop toe
-        if (!document.getElementById("dashboardBtn")) {
-            const dashboardLi = document.createElement("li");
-            dashboardLi.id = "dashboardBtn";
-            dashboardLi.innerHTML = `<a href="/dashboard.html" class="sign-in-button">Dashboard</a>`;
-            nav.appendChild(dashboardLi);
-        }
-
-        // Voeg "Logout"-knop toe
-        if (!document.getElementById("logoutBtn")) {
-            const logoutLi = document.createElement("li");
-            logoutLi.id = "logoutBtn";
-            logoutLi.innerHTML = `<button onclick="logout()" class="sign-in-button">Log Out</button>`;
-            nav.appendChild(logoutLi);
-        }
-    }
-}
-
-// Logout
-function logout() {
-    signOut(auth).then(() => {
-        alert("Uitgelogd");
-        location.reload();
+  describe('Authentication', () => {
+    test('sign in form submits with correct credentials', async () => {
+      // Setup
+      const email = 'test@example.com';
+      const password = 'password123';
+      document.getElementById('signInEmail').value = email;
+      document.getElementById('signInPassword').value = password;
+      
+      // Mock successful sign-in
+      signInWithEmailAndPassword.mockResolvedValueOnce({ user: { uid: '123' } });
+      
+      // Setup modal close function
+      window.closeSignInModal = jest.fn();
+      
+      // Simulate form submission
+      const event = { preventDefault: jest.fn() };
+      await document.getElementById('signInForm').onsubmit(event);
+      
+      // Assertions
+      expect(event.preventDefault).toHaveBeenCalled();
+      expect(signInWithEmailAndPassword).toHaveBeenCalledWith(
+        expect.anything(), 
+        email, 
+        password
+      );
+      expect(window.closeSignInModal).toHaveBeenCalled();
     });
-}
-
-// Check loginstatus
-onAuthStateChanged(auth, (user) => {
-    if (user) {
-        updateUI(user);
-    }
-});
+    
+    test('sign in form shows error on failure', async () => {
+      // Setup
+      const error = new Error('Invalid credentials');
+      signInWithEmailAndPassword.mockRejectedValueOnce(error);
+      
+      // Mock alert
+      window.alert = jest.fn();
+      
+      // Simulate form submission
+      const event = { preventDefault: jest.fn() };
+      await document.getElementById('signInForm').onsubmit(event);
+      
+      // Assertions
+      expect(event.preventDefault).toHaveBeenCalled();
+      expect(window.alert).toHaveBeenCalledWith(`Error: ${error.message}`);
+    });
+    
+    test('sign up form validates username length', async () => {
+      // Setup
+      document.getElementById('signUpUsername').value = 'ab'; // Too short
+      document.getElementById('signUpEmail').value = 'test@example.com';
+      document.getElementById('signUpPassword').value = 'password123';
+      
+      // Mock alert
+      window.alert = jest.fn();
+      
+      // Simulate form submission
+      const event = { preventDefault: jest.fn() };
+      await document.getElementById('signUpForm').onsubmit(event);
+      
+      // Assertions
+      expect(event.preventDefault).toHaveBeenCalled();
+      expect(window.alert).toHaveBeenCalledWith('Username must be between 3 and 20 characters.');
+      expect(createUserWithEmailAndPassword).not.toHaveBeenCalled();
+    });
+    
+    test('sign up form creates user and profile successfully', async () => {
+      // Setup
+      const username = 'testuser';
+      const email = 'test@example.com';
+      const password = 'password123';
+      const uid = 'user123';
+      
+      document.getElementById('signUpUsername').value = username;
+      document.getElementById('signUpEmail').value = email;
+      document.getElementById('signUpPassword').value = password;
+      
+      // Mock successful user creation
+      createUserWithEmailAndPassword.mockResolvedValueOnce({ 
+        user: { uid } 
+      });
+      
+      // Mock document references
+      doc.mockReturnValueOnce('userDocRef');
+      
+      // Setup success functions
+      window.alert = jest.fn();
+      window.closeSignUpModal = jest.fn();
+      
+      // Simulate form submission
+      const event = { preventDefault: jest.fn() };
+      await document.getElementById('signUpForm').onsubmit(event);
+      
+      // Assertions
+      expect(event.preventDefault).toHaveBeenCalled();
+      expect(createUserWithEmailAndPassword).toHaveBeenCalledWith(
+        expect.anything(), 
+        email, 
+        password
+      );
+      expect(doc).toHaveBeenCalledWith(expect.anything(), 'users', uid);
+      expect(setDoc).toHaveBeenCalledWith('userDocRef', {
+        username,
+        email
+      });
+      expect(window.alert).toHaveBeenCalledWith('Account created!');
+      expect(window.closeSignUpModal).toHaveBeenCalled();
+    });
+    
+    test('logout button signs user out', () => {
+      // Simulate logout click
+      document.getElementById('logoutBtn').onclick();
+      
+      // Assertions
+      expect(signOut).toHaveBeenCalled();
+    });
+    
+    test('auth state change shows forum when logged in', async () => {
+      // Setup
+      const uid = 'user123';
+      const username = 'testuser';
+      const forumSection = document.getElementById('forumSection');
+      const logoutBtn = document.getElementById('logoutBtn');
+      const authButton = document.getElementById('authButton');
+      
+      // Mock document retrieval
+      doc.mockReturnValueOnce('userDocRef');
+      getDoc.mockResolvedValueOnce({
+        data: () => ({ username })
+      });
+      
+      // Grab the auth state callback
+      const authCallback = onAuthStateChanged.mock.calls[0][1];
+      
+      // Simulate logge
