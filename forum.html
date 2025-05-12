@@ -67,10 +67,9 @@
   <!-- Firebase + App Logic -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-app.js";
-    import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-auth.js";
+    import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-auth.js";
     import { getFirestore, collection, addDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-firestore.js";
 
-    // Firebase configuration
     const firebaseConfig = {
       apiKey: "AIzaSyDsb7m4EijaU3NNxwoos8y6egI29nfbChk",
       authDomain: "jennix-777e1.firebaseapp.com",
@@ -81,35 +80,49 @@
       measurementId: "G-HKJ85NVGF4"
     };
 
-    // Initialize Firebase
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    // DOM elements
     const signInForm = document.getElementById("signInForm");
+    const signUpForm = document.getElementById("signUpForm");
     const logoutBtn = document.getElementById("logoutBtn");
     const forumSection = document.getElementById("forumSection");
     const postBtn = document.getElementById("postBtn");
     const postText = document.getElementById("postText");
     const postsDiv = document.getElementById("posts");
 
-    // Sign In Logic
+    // Sign In
     signInForm.onsubmit = (e) => {
       e.preventDefault();
       const email = document.getElementById("signInEmail").value;
       const password = document.getElementById("signInPassword").value;
       signInWithEmailAndPassword(auth, email, password)
-        .then(closeSignInModal)
-        .catch(err => alert(err.message));
+        .then(() => {
+          closeSignInModal();
+        })
+        .catch(err => alert("Error: " + err.message));
     };
 
-    // Sign Out Logic
+    // Sign Up
+    signUpForm.onsubmit = (e) => {
+      e.preventDefault();
+      const email = document.getElementById("signUpEmail").value;
+      const password = document.getElementById("signUpPassword").value;
+      createUserWithEmailAndPassword(auth, email, password)
+        .then(() => {
+          alert("Account created!");
+          closeSignUpModal();
+        })
+        .catch(err => alert("Error: " + err.message));
+    };
+
+    // Log out
     logoutBtn.onclick = () => {
       signOut(auth);
     };
 
-    // Firebase Authentication state observer
+    // Auth state observer
     onAuthStateChanged(auth, user => {
       if (user) {
         forumSection.style.display = "block";
@@ -120,18 +133,18 @@
       }
     });
 
-    // Posting Logic
+    // Post
     postBtn.onclick = async () => {
       if (postText.value.trim() !== "") {
         await addDoc(collection(db, "posts"), {
           text: postText.value,
           timestamp: new Date()
         });
-        postText.value = ""; // Clear the textarea
+        postText.value = "";
       }
     };
 
-    // Realtime posts display
+    // Show posts
     const q = query(collection(db, "posts"), orderBy("timestamp", "desc"));
     onSnapshot(q, snapshot => {
       postsDiv.innerHTML = "";
@@ -142,7 +155,7 @@
       });
     });
 
-    // Modal toggling functions
+    // Modals
     window.openSignInModal = () => {
       document.getElementById("signInModal").style.display = "block";
     };
