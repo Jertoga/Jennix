@@ -1,3 +1,20 @@
+// Firebase importeren (bovenaan)
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-auth.js";
+
+// Firebase configuratie
+const firebaseConfig = {
+    apiKey: "JOUW_API_KEY",
+    authDomain: "JOUW_PROJECT_ID.firebaseapp.com",
+    projectId: "JOUW_PROJECT_ID",
+    storageBucket: "JOUW_PROJECT_ID.appspot.com",
+    messagingSenderId: "JOUW_SENDER_ID",
+    appId: "JOUW_APP_ID"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+
 // Functie om de community te joinen
 function joinCommunity() {
     alert("Thanks for joining the Jenna Ortega fan community!");
@@ -30,59 +47,70 @@ function switchToSignIn() {
     openSignInModal();
 }
 
-// Close modal if clicking outside
 window.onclick = function(event) {
-    if (event.target === document.getElementById("signInModal")) {
-        closeSignInModal();
-    }
-    if (event.target === document.getElementById("signUpModal")) {
-        closeSignUpModal();
-    }
+    if (event.target === document.getElementById("signInModal")) closeSignInModal();
+    if (event.target === document.getElementById("signUpModal")) closeSignUpModal();
 };
 
-// Firebase configuratie
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-auth.js";
-
-const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_AUTH_DOMAIN",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_STORAGE_BUCKET",
-    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-    appId: "YOUR_APP_ID"
-};
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-
-// Inloggen
-document.getElementById("signInForm").addEventListener("submit", (e) => {
-    e.preventDefault();
-    const email = document.getElementById("signInEmail").value;
-    const password = document.getElementById("signInPassword").value;
-    signInWithEmailAndPassword(auth, email, password)
-        .then((userCredential) => {
-            alert("Logged in as: " + userCredential.user.email);
-            window.location.href = "forum.html"; // Doorsturen naar het forum
-        })
-        .catch((error) => {
-            alert("Error: " + error.message); // Foutmelding tonen bij inlogfout
-        });
-});
-
-// Registreren
-document.getElementById("signUpForm").addEventListener("submit", (e) => {
+// Sign Up formulier
+document.getElementById("signUpForm").addEventListener("submit", function (e) {
     e.preventDefault();
     const email = document.getElementById("signUpEmail").value;
     const password = document.getElementById("signUpPassword").value;
+
     createUserWithEmailAndPassword(auth, email, password)
         .then((userCredential) => {
-            alert("Account created: " + userCredential.user.email); // Account gecreëerd
+            alert("Account successfully created!");
             closeSignUpModal();
-            openSignInModal(); // Schakel naar het inlogscherm na registratie
         })
         .catch((error) => {
-            alert("Error: " + error.message); // Foutmelding tonen bij registratiefout
+            alert("Error: " + error.message);
         });
+});
+
+// Sign In formulier
+document.getElementById("signInForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    const email = document.getElementById("signInEmail").value;
+    const password = document.getElementById("signInPassword").value;
+
+    signInWithEmailAndPassword(auth, email, password)
+        .then((userCredential) => {
+            alert("Successfully signed in!");
+            closeSignInModal();
+            updateUI(userCredential.user);
+        })
+        .catch((error) => {
+            alert("Error: " + error.message);
+        });
+});
+
+// UI bijwerken bij login/logout
+function updateUI(user) {
+    const nav = document.querySelector("nav ul");
+    const signInBtn = document.querySelector(".sign-in-button");
+
+    if (user) {
+        signInBtn.style.display = "none";
+
+        const li = document.createElement("li");
+        li.id = "logoutBtn";
+        li.innerHTML = `<button onclick="logout()" class="sign-in-button">Log Out</button>`;
+        nav.appendChild(li);
+    }
+}
+
+// Logout functie
+function logout() {
+    signOut(auth).then(() => {
+        alert("Logged out");
+        location.reload();
+    });
+}
+
+// Check of user al is ingelogd
+onAuthStateChanged(auth, (user) => {
+    if (user) {
+        updateUI(user);
+    }
 });
