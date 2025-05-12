@@ -8,21 +8,27 @@
     <style>
         /* Additional Forum-Specific Styling */
         #forumSection {
-            max-width: 800px;
+            max-width: 600px;
             margin: 0 auto;
             padding: 20px;
         }
 
         #postText {
             width: 100%;
-            background-color: #222;
-            border: 1px solid #444;
+            background-color: #1e1e1e;
+            border: 1px solid #333;
             color: #fff;
-            padding: 15px;
-            border-radius: 8px;
+            padding: 12px;
+            border-radius: 6px;
             min-height: 100px;
             resize: vertical;
             margin-bottom: 15px;
+            transition: border-color 0.3s ease;
+        }
+
+        #postText:focus {
+            outline: none;
+            border-color: #f7a800;
         }
 
         #postBtn {
@@ -31,37 +37,37 @@
         }
 
         #posts {
-            background-color: #1e1e1e;
-            border-radius: 10px;
-            padding: 20px;
+            background-color: transparent;
+            padding: 0;
         }
 
         .post {
-            background-color: #252525;
-            border-radius: 8px;
+            background-color: #1e1e1e;
+            border-radius: 6px;
             padding: 15px;
             margin-bottom: 15px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border: 1px solid #333;
             transition: background-color 0.3s ease;
-        }
-
-        .post:hover {
-            background-color: #2a2a2a;
         }
 
         .post-header {
             display: flex;
             justify-content: space-between;
-            color: #999;
-            font-size: 0.8em;
+            align-items: center;
             margin-bottom: 10px;
-            border-bottom: 1px solid #333;
             padding-bottom: 10px;
+            border-bottom: 1px solid #333;
         }
 
         .post-header span:first-child {
             font-weight: bold;
             color: #f7a800;
+            margin-right: 10px;
+        }
+
+        .post-header span:last-child {
+            color: #888;
+            font-size: 0.8em;
         }
 
         .post-content {
@@ -70,17 +76,40 @@
         }
 
         #logoutBtn {
-            margin-top: 15px;
-            width: 100%;
+            display: none;
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: transparent;
+            color: #f7a800;
+            border: 1px solid #f7a800;
+            padding: 8px 15px;
+            border-radius: 4px;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        #logoutBtn:hover {
+            background-color: #f7a800;
+            color: #121212;
+        }
+
+        .sign-in-button {
+            transition: opacity 0.3s ease;
+        }
+
+        .sign-in-button.hidden {
+            opacity: 0;
+            pointer-events: none;
         }
 
         @media (max-width: 600px) {
             .post-header {
                 flex-direction: column;
+                align-items: flex-start;
             }
 
-            .post-header span {
-                margin-bottom: 5px;
+            .post-header span:last-child {
+                margin-top: 5px;
             }
         }
     </style>
@@ -97,7 +126,10 @@
                 <li><a href="gallery.html">Gallery</a></li>
                 <li><a href="forum.html" class="active">Forum</a></li>
                 <li><a href="about.html">About</a></li>
-                <button class="sign-in-button" onclick="openSignInModal()">Sign In</button>
+                <li>
+                    <button id="authButton" class="sign-in-button" onclick="openSignInModal()">Sign In</button>
+                    <button id="logoutBtn">Log Out</button>
+                </li>
             </ul>
         </nav>
     </header>
@@ -108,8 +140,7 @@
             <h2>Community Forum</h2>
             <textarea id="postText" placeholder="Share something about Jenna..."></textarea>
             <button id="postBtn" class="cta-button">Post</button>
-            <div id="posts" style="margin-top: 20px;"></div>
-            <button id="logoutBtn" class="cta-button" style="display:none;">Log Out</button>
+            <div id="posts"></div>
         </section>
     </main>
 
@@ -174,6 +205,7 @@
         const signInForm = document.getElementById("signInForm");
         const signUpForm = document.getElementById("signUpForm");
         const logoutBtn = document.getElementById("logoutBtn");
+        const authButton = document.getElementById("authButton");
         const forumSection = document.getElementById("forumSection");
         const postBtn = document.getElementById("postBtn");
         const postText = document.getElementById("postText");
@@ -240,12 +272,15 @@
                     username: userDoc.data().username
                 };
 
+                // Update UI for logged-in state
                 forumSection.style.display = "block";
                 logoutBtn.style.display = "inline-block";
+                authButton.classList.add('hidden');
             } else {
                 currentUser = null;
                 forumSection.style.display = "none";
                 logoutBtn.style.display = "none";
+                authButton.classList.remove('hidden');
             }
         });
 
