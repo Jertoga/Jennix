@@ -1,40 +1,88 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Jennix Forum</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Jennix | Jenna Ortega Fan Site</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <h1>Jennix Forum</h1>
+  <header>
+    <div class="logo">
+      <h1>Jennix</h1>
+    </div>
+    <nav>
+      <ul>
+        <li><a href="index.html" class="active">Home</a></li>
+        <li><a href="news.html">News</a></li>
+        <li><a href="gallery.html">Gallery</a></li>
+        <li><a href="forum.html">Forum</a></li>
+        <li><a href="about.html">About</a></li>
+        <li><button class="sign-in-button" onclick="openSignInModal()">Sign In</button></li>
+        <li><button id="logoutBtn" style="display:none;">Log Out</button></li>
+      </ul>
+    </nav>
+  </header>
 
-  <div id="auth-section">
-    <input type="email" id="email" placeholder="Email">
-    <input type="password" id="password" placeholder="Wachtwoord">
-    <button id="signupBtn">Sign Up</button>
-    <button id="loginBtn">Log In</button>
-    <button id="logoutBtn" style="display:none;">Log Out</button>
-  </div>
+  <section class="hero">
+    <div class="hero-content">
+      <h2>Welcome to Jennix</h2>
+      <p>Your ultimate place for everything about Jenna Ortega!</p>
+      <button class="cta-button" onclick="joinCommunity()">Join the Community</button>
+    </div>
+  </section>
 
-  <div id="post-section" style="display:none;">
-    <textarea id="postText" placeholder="Schrijf iets..."></textarea>
+  <!-- Forum -->
+  <section id="forumSection" style="display:none; padding: 20px;">
+    <h2>Community Forum</h2>
+    <textarea id="postText" placeholder="Share something about Jenna..."></textarea>
     <button id="postBtn">Post</button>
+    <div id="posts" style="margin-top: 20px;"></div>
+  </section>
+
+  <!-- Modal voor Sign In -->
+  <div id="signInModal" class="modal">
+    <div class="modal-content">
+      <span class="close-button" onclick="closeSignInModal()">&times;</span>
+      <h3>Sign In to Jennix</h3>
+      <form id="signInForm">
+        <input type="email" id="signInEmail" placeholder="Enter your email" required />
+        <input type="password" id="signInPassword" placeholder="Enter your password" required />
+        <button type="submit">Sign In</button>
+      </form>
+      <p class="switch-text">Don't have an account? <a href="#" onclick="switchToSignUp()">Sign Up</a></p>
+    </div>
   </div>
 
-  <h2>Posts</h2>
-  <div id="posts"></div>
+  <!-- Modal voor Sign Up -->
+  <div id="signUpModal" class="modal">
+    <div class="modal-content">
+      <span class="close-button" onclick="closeSignUpModal()">&times;</span>
+      <h3>Create a Jennix Account</h3>
+      <form id="signUpForm">
+        <input type="email" id="signUpEmail" placeholder="Enter your email" required />
+        <input type="password" id="signUpPassword" placeholder="Choose a password" required />
+        <button type="submit">Sign Up</button>
+      </form>
+      <p class="switch-text">Already have an account? <a href="#" onclick="switchToSignIn()">Sign In</a></p>
+    </div>
+  </div>
 
+  <footer>
+    <p>&copy; 2025 Jennix. All rights reserved.</p>
+  </footer>
+
+  <!-- Firebase + App Logic -->
   <script type="module">
-    // Firebase imports
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-app.js";
     import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-auth.js";
     import { getFirestore, collection, addDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-firestore.js";
 
-    // Config
     const firebaseConfig = {
       apiKey: "AIzaSyDsb7m4EijaU3NNxwoos8y6egI29nfbChk",
       authDomain: "jennix-777e1.firebaseapp.com",
       projectId: "jennix-777e1",
-      storageBucket: "jennix-777e1.firebasestorage.app",
+      storageBucket: "jennix-777e1.appspot.com",
       messagingSenderId: "673075142639",
       appId: "1:673075142639:web:ea93e3ae1b244463ca201a",
       measurementId: "G-HKJ85NVGF4"
@@ -44,25 +92,29 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    // UI Elements
-    const email = document.getElementById('email');
-    const password = document.getElementById('password');
-    const signupBtn = document.getElementById('signupBtn');
-    const loginBtn = document.getElementById('loginBtn');
-    const logoutBtn = document.getElementById('logoutBtn');
-    const postSection = document.getElementById('post-section');
-    const postText = document.getElementById('postText');
-    const postBtn = document.getElementById('postBtn');
-    const postsDiv = document.getElementById('posts');
+    const signUpForm = document.getElementById("signUpForm");
+    const signInForm = document.getElementById("signInForm");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const forumSection = document.getElementById("forumSection");
+    const postBtn = document.getElementById("postBtn");
+    const postText = document.getElementById("postText");
+    const postsDiv = document.getElementById("posts");
 
-    // Auth handlers
-    signupBtn.onclick = () => {
-      createUserWithEmailAndPassword(auth, email.value, password.value)
+    signUpForm.onsubmit = (e) => {
+      e.preventDefault();
+      const email = document.getElementById("signUpEmail").value;
+      const password = document.getElementById("signUpPassword").value;
+      createUserWithEmailAndPassword(auth, email, password)
+        .then(closeSignUpModal)
         .catch(err => alert(err.message));
     };
 
-    loginBtn.onclick = () => {
-      signInWithEmailAndPassword(auth, email.value, password.value)
+    signInForm.onsubmit = (e) => {
+      e.preventDefault();
+      const email = document.getElementById("signInEmail").value;
+      const password = document.getElementById("signInPassword").value;
+      signInWithEmailAndPassword(auth, email, password)
+        .then(closeSignInModal)
         .catch(err => alert(err.message));
     };
 
@@ -72,15 +124,14 @@
 
     onAuthStateChanged(auth, user => {
       if (user) {
-        postSection.style.display = 'block';
-        logoutBtn.style.display = 'inline';
+        forumSection.style.display = "block";
+        logoutBtn.style.display = "inline";
       } else {
-        postSection.style.display = 'none';
-        logoutBtn.style.display = 'none';
+        forumSection.style.display = "none";
+        logoutBtn.style.display = "none";
       }
     });
 
-    // Post to Firestore
     postBtn.onclick = async () => {
       if (postText.value.trim() !== "") {
         await addDoc(collection(db, "posts"), {
@@ -91,7 +142,6 @@
       }
     };
 
-    // Live updates
     const q = query(collection(db, "posts"), orderBy("timestamp", "desc"));
     onSnapshot(q, snapshot => {
       postsDiv.innerHTML = "";
@@ -101,6 +151,30 @@
         postsDiv.appendChild(p);
       });
     });
+
+    // Modal switching logic
+    window.openSignInModal = () => {
+      document.getElementById("signInModal").style.display = "block";
+    };
+    window.closeSignInModal = () => {
+      document.getElementById("signInModal").style.display = "none";
+    };
+    window.openSignUpModal = () => {
+      document.getElementById("signUpModal").style.display = "block";
+    };
+    window.closeSignUpModal = () => {
+      document.getElementById("signUpModal").style.display = "none";
+    };
+    window.switchToSignUp = () => {
+      closeSignInModal();
+      openSignUpModal();
+    };
+    window.switchToSignIn = () => {
+      closeSignUpModal();
+      openSignInModal();
+    };
   </script>
+
+  <script src="main.js"></script>
 </body>
 </html>
