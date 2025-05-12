@@ -14,7 +14,7 @@
             display: flex;
             flex-direction: column;
             height: 80vh;
-            overflow-x: hidden; /* Voorkom horizontale scroll */
+            overflow-x: hidden;
         }
 
         #posts {
@@ -22,27 +22,27 @@
             padding: 0;
             flex-grow: 1;
             overflow-y: auto;
-            overflow-x: hidden; /* Voorkom horizontale scroll */
+            overflow-x: hidden;
             margin-bottom: 20px;
-            /* Scrollbar styling */
+            /* Improved scrollbar styling */
             scrollbar-width: thin;
-            scrollbar-color: #f7a800 #333;
+            scrollbar-color: #f7a800 #1e1e1e;
         }
 
-        /* Custom scrollbar voor WebKit browsers (Chrome, Safari, nieuwe Edge) */
+        /* Enhanced scrollbar for WebKit browsers (Chrome, Safari, Edge) */
         #posts::-webkit-scrollbar {
             width: 8px;
         }
 
         #posts::-webkit-scrollbar-track {
-            background: #333;
+            background: #1e1e1e;
             border-radius: 10px;
         }
 
         #posts::-webkit-scrollbar-thumb {
             background-color: #f7a800;
             border-radius: 10px;
-            border: 2px solid #333;
+            border: 2px solid #1e1e1e;
         }
 
         #posts::-webkit-scrollbar-thumb:hover {
@@ -70,7 +70,7 @@
             resize: vertical;
             margin-bottom: 15px;
             transition: border-color 0.3s ease;
-            box-sizing: border-box; /* Zorg dat padding binnen breedte blijft */
+            box-sizing: border-box;
         }
 
         #postText:focus {
@@ -103,7 +103,7 @@
             border: 1px solid #333;
             transition: background-color 0.3s ease;
             width: 100%;
-            box-sizing: border-box; /* Voorkom overflow */
+            box-sizing: border-box;
         }
 
         .post-header {
@@ -186,10 +186,11 @@
             right: 0;
         }
 
+        /* Improved mobile layout */
         @media (max-width: 600px) {
             body {
                 position: relative;
-                height: 100%;
+                height: 100vh;
                 overflow: hidden;
             }
             
@@ -204,7 +205,7 @@
 
             main.content {
                 position: fixed;
-                top: 85px; /* Ongeveer de hoogte van de header */
+                top: 85px; /* Header height */
                 left: 0;
                 right: 0;
                 bottom: 0;
@@ -228,7 +229,7 @@
             #posts {
                 flex: 1;
                 overflow-y: auto;
-                padding-bottom: 130px; /* Ruimte voor het invoerveld */
+                padding-bottom: 140px; /* Space for input area + extra padding */
                 margin-bottom: 0;
                 -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
             }
@@ -239,9 +240,9 @@
                 left: 0;
                 right: 0;
                 background-color: #181818;
-                padding: 10px;
+                padding: 15px;
                 border-top: 1px solid #333;
-                z-index: 999; /* Hoger dan alle andere elementen */
+                z-index: 999;
                 max-width: 100%;
                 width: 100%;
                 box-sizing: border-box;
@@ -251,7 +252,7 @@
                 min-height: 60px;
                 margin-bottom: 10px;
                 width: 100%;
-                max-height: 100px; /* Beperk de hoogte op mobiel */
+                max-height: 80px; /* Limited height on mobile */
             }
 
             #postBtn {
@@ -260,12 +261,13 @@
             }
 
             footer {
-                display: none; /* Verberg footer op mobiel voor meer ruimte */
+                display: none; /* Hide footer on mobile for more space */
             }
         }
     </style>
 </head>
 <body>
+    <!-- Keep header and navigation as is -->
     <header>
         <div class="logo">
             <h1>Jennix</h1>
@@ -364,45 +366,65 @@
         const postText = document.getElementById("postText");
         const postsDiv = document.getElementById("posts");
 
-        // Functie om input veld opnieuw te positioneren bij toetsenbord op mobiel
-        function adjustForKeyboard() {
-            // Alleen voor mobiele apparaten
+        // Always scroll to bottom function - improved version
+        function scrollToLatestPost(force = false) {
+            if (postsDiv.lastElementChild) {
+                // Use smooth scrolling for better user experience
+                postsDiv.scrollTo({
+                    top: postsDiv.scrollHeight,
+                    behavior: force ? 'auto' : 'smooth'
+                });
+            }
+        }
+
+        // Improved keyboard handling for mobile
+        function setupMobileKeyboardHandling() {
             if (window.innerWidth <= 600) {
-                // Event listener voor focus op het input veld
+                // When the text area gets focus
                 postText.addEventListener('focus', () => {
-                    // Zorg dat de invoer zichtbaar blijft en scroll naar beneden
+                    // Small delay to let keyboard appear first
                     setTimeout(() => {
-                        // Extra scroll voor iOS apparaten
-                        window.scrollTo(0, document.body.scrollHeight);
-                        // Zorg dat de viewport meebeweegt
-                        document.body.scrollTop = document.body.scrollHeight;
-                        // Scroll posts naar beneden voor betere zichtbaarheid
-                        scrollToLatestPost();
+                        // Ensure posts are visible above input
+                        scrollToLatestPost(true);
+                        
+                        // Make sure the window scrolls properly on iOS
+                        window.scrollTo(0, 0);
+                        
+                        // Ensure the post input stays in view
+                        document.querySelector('.post-input-area').scrollIntoView(false);
                     }, 300);
                 });
                 
-                // Zorg dat de invoer zichtbaar blijft bij window resize (toetsenbord openen/sluiten)
+                // Handle viewport changes (keyboard appearing/disappearing)
+                const originalHeight = window.innerHeight;
                 window.addEventListener('resize', () => {
-                    // Kort timeout om de browser tijd te geven
-                    setTimeout(() => {
+                    // If keyboard is showing (height reduced significantly)
+                    if (window.innerHeight < originalHeight * 0.8) {
                         if (document.activeElement === postText) {
-                            window.scrollTo(0, document.body.scrollHeight);
+                            // Reposition view so text input is above keyboard
+                            setTimeout(() => {
+                                document.querySelector('.post-input-area').scrollIntoView(false);
+                            }, 100);
                         }
-                    }, 100);
+                    } else {
+                        // When keyboard closes, scroll to the latest post
+                        scrollToLatestPost();
+                    }
+                });
+                
+                // Handle orientation changes
+                window.addEventListener('orientationchange', () => {
+                    setTimeout(scrollToLatestPost, 300);
                 });
             }
         }
 
-        // Functie om naar het laatste bericht te scrollen
-        function scrollToLatestPost() {
-            if (postsDiv.lastElementChild) {
-                postsDiv.scrollTop = postsDiv.scrollHeight;
-            }
-        }
-
-        // Aanroepen bij laden en bij resize
-        window.addEventListener('load', adjustForKeyboard);
-        window.addEventListener('resize', adjustForKeyboard);
+        // Call setup functions
+        window.addEventListener('load', () => {
+            setupMobileKeyboardHandling();
+            // Initial scroll to latest post
+            setTimeout(scrollToLatestPost, 500); 
+        });
 
         // Sign In
         signInForm.onsubmit = async (e) => {
@@ -474,20 +496,28 @@
             forumSection.style.display = "block";
         });
 
-        // Post
+        // Post message with improved scrolling
         postBtn.onclick = async () => {
             if (currentUser && postText.value.trim() !== "") {
-                await addDoc(collection(db, "posts"), {
-                    text: postText.value,
-                    username: currentUser.username,
-                    email: currentUser.email,
-                    timestamp: new Date()
-                });
-                postText.value = "";
-                // Focus op invoerveld na posten (voor mobiel)
-                postText.focus();
-                // Scroll naar het laatste bericht
-                setTimeout(scrollToLatestPost, 300);
+                try {
+                    await addDoc(collection(db, "posts"), {
+                        text: postText.value,
+                        username: currentUser.username,
+                        email: currentUser.email,
+                        timestamp: new Date()
+                    });
+                    postText.value = "";
+                    
+                    // Keep focus on text area for continued typing
+                    postText.focus();
+                    
+                    // Ensure auto-scroll to new post
+                    setTimeout(() => {
+                        scrollToLatestPost(true);
+                    }, 300);
+                } catch (err) {
+                    alert("Error posting message: " + err.message);
+                }
             }
         };
 
@@ -503,10 +533,15 @@
                    date1.getFullYear() !== date2.getFullYear();
         }
 
-        // Show posts
+        // Show posts with improved auto-scrolling
         const q = query(collection(db, "posts"), orderBy("timestamp", "asc"));
+        let initialLoad = true;
+        
         onSnapshot(q, snapshot => {
             let lastDate = null;
+            const wasAtBottom = postsDiv.scrollHeight - postsDiv.scrollTop <= postsDiv.clientHeight + 50;
+            const prevScrollHeight = postsDiv.scrollHeight;
+            
             postsDiv.innerHTML = "";
             
             snapshot.forEach(doc => {
@@ -546,10 +581,22 @@
                 postsDiv.appendChild(postDiv);
             });
             
-            // Scroll naar het laatste bericht na een korte vertraging
-            setTimeout(() => {
-                scrollToLatestPost();
-            }, 100);
+            // Smart scrolling decision:
+            // 1. Always scroll on initial load
+            // 2. Only auto-scroll if user was already near bottom
+            // 3. Otherwise maintain relative scroll position
+            if (initialLoad || wasAtBottom || document.activeElement === postText) {
+                scrollToLatestPost(initialLoad);
+            } else {
+                // Keep same relative scroll position when new content loads
+                const newScrollHeight = postsDiv.scrollHeight;
+                const scrollDiff = newScrollHeight - prevScrollHeight;
+                if (scrollDiff > 0) {
+                    postsDiv.scrollTop += scrollDiff;
+                }
+            }
+            
+            initialLoad = false;
         });
 
         // Modals
@@ -573,6 +620,15 @@
             closeSignUpModal();
             openSignInModal();
         };
+
+        // Add keyboard shortcut for posting messages
+        postText.addEventListener('keydown', (e) => {
+            // Ctrl/Cmd + Enter to post
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && !postBtn.disabled) {
+                e.preventDefault();
+                postBtn.click();
+            }
+        });
     </script>
 </body>
 </html>
