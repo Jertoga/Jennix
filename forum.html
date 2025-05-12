@@ -1,256 +1,4 @@
-<script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, setDoc, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-firestore.js";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyDsb7m4EijaU3NNxwoos8y6egI29nfbChk",
-            authDomain: "jennix-777e1.firebaseapp.com",
-            projectId: "jennix-777e1",
-            storageBucket: "jennix-777e1.appspot.com",
-            messagingSenderId: "673075142639",
-            appId: "1:673075142639:web:ea93e3ae1b244463ca201a",
-            measurementId: "G-HKJ85NVGF4"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-
-        const signInForm = document.getElementById("signInForm");
-        const signUpForm = document.getElementById("signUpForm");
-        const logoutBtn = document.getElementById("logoutBtn");
-        const authButton = document.getElementById("authButton");
-        const forumSection = document.getElementById("forumSection");
-        const postBtn = document.getElementById("postBtn");
-        const postText = document.getElementById("postText");
-        const postsDiv = document.getElementById("posts");
-
-        // Improved scrolling to latest post function
-        function scrollToLatestPost(immediate = false) {
-            if (postsDiv.lastElementChild) {
-                // Use smooth scrolling normally, but immediate when needed
-                postsDiv.scrollTo({
-                    top: postsDiv.scrollHeight,
-                    behavior: immediate ? 'auto' : 'smooth'
-                });
-            }
-        }
-
-        // Enhanced mobile keyboard and input handling
-        function setupMobileKeyboardHandling() {
-            if (window.innerWidth <= 600) {
-                // When user focuses on the text area
-                postText.addEventListener('focus', () => {
-                    // Add class to body for keyboard open state
-                    document.body.classList.add('keyboard-open');
-                    
-                    // Wait a bit for keyboard to appear
-                    setTimeout(() => {
-                        // Make sure posts are visible
-                        scrollToLatestPost(true);
-                        
-                        // Ensure the textarea is visible above keyboard
-                        document.querySelector('.post-input-area').scrollIntoView(false);
-                    }, 300);
-                });
-                
-                // When user blurs from text area
-                postText.addEventListener('blur', () => {
-                    // Remove keyboard open class
-                    document.body.classList.remove('keyboard-open');
-                });
-                
-                // Handle viewport changes from keyboard
-                const originalViewportHeight = window.innerHeight;
-                window.addEventListener('resize', () => {
-                    const currentViewportHeight = window.innerHeight;
-                    
-                    // If keyboard is likely open (height reduced significantly)
-                    if (currentViewportHeight < originalViewportHeight * 0.8) {
-                        document.body.classList.add('keyboard-open');
-                        
-                        // If text area is focused, ensure it's visible
-                        if (document.activeElement === postText) {
-                            setTimeout(() => {
-                                document.querySelector('.post-input-area').scrollIntoView(false);
-                            }, 100);
-                        }
-                    } else {
-                        document.body.classList.remove('keyboard-open');
-                        
-                        // When keyboard closes, scroll to latest posts
-                        if (document.activeElement !== postText) {
-                            scrollToLatestPost();
-                        }
-                    }
-                });
-                
-                // Handle orientation changes
-                window.addEventListener('orientationchange', () => {
-                    // Wait for rotation to complete
-                    setTimeout(() => {
-                        scrollToLatestPost(true);
-                        
-                        // If input has focus, make sure it's visible
-                        if (document.activeElement === postText) {
-                            document.querySelector('.post-input-area').scrollIntoView(false);
-                        }
-                    }, 300);
-                });
-            }
-        }
-
-        // Set up when page loads
-        window.addEventListener('DOMContentLoaded', () => {
-            setupMobileKeyboardHandling();
-            
-            // Initial scroll to latest post with delay to ensure content is loaded
-            setTimeout(() => {
-                scrollToLatestPost(true);
-            }, 500);
-        });
-
-        // Sign In
-        signInForm.onsubmit = async (e) => {
-            e.preventDefault();
-            const email = document.getElementById("signInEmail").value;
-            const password = document.getElementById("signInPassword").value;
-            
-            try {
-                await signInWithEmailAndPassword(auth, email, password);
-                closeSignInModal();
-                // Scroll to latest post after login
-                setTimeout(scrollToLatestPost, 500);
-            } catch (err) {
-                alert("Error: " + err.message);
-            }
-        };
-
-        // Sign Up
-        signUpForm.onsubmit = async (e) => {
-            e.preventDefault();
-            const username = document.getElementById("signUpUsername").value.trim();
-            const email = document.getElementById("signUpEmail").value;
-            const password = document.getElementById("signUpPassword").value;
-            
-            if (username.length < 3 || username.length > 20) {
-                alert("Username must be between 3 and 20 characters.");
-                return;
-            }
-
-            try {
-                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                const user = userCredential.user;
-                await setDoc(doc(db, "users", user.uid), {
-                    username: username,
-                    email: email
-                });
-                alert("Account created!");
-                closeSignUpModal();
-                // Scroll to latest post after account creation
-                setTimeout(scrollToLatestPost, 500);
-            } catch (err) {
-                alert("Error: " + err.message);
-            }
-        };
-
-        // Log out
-        logoutBtn.onclick = () => {
-            signOut(auth);
-        };
-
-        // Auth state observer
-        let currentUser = null;
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                const userDoc = await getDoc(doc(db, "users", user.uid));
-                currentUser = {
-                    ...user,
-                    username: userDoc.data().username
-                };
-                logoutBtn.style.display = "inline-block";
-                authButton.classList.add('hidden');
-                postText.disabled = false;
-                postText.placeholder = "Share something about Jenna...";
-                postBtn.disabled = false;
-            } else {
-                currentUser = null;
-                logoutBtn.style.display = "none";
-                authButton.classList.remove('hidden');
-                postText.disabled = true;
-                postText.placeholder = "Sign in to post a comment...";
-                postBtn.disabled = true;
-            }
-            forumSection.style.display = "block";
-        });
-
-        // Post message with improved handling
-        postBtn.onclick = async () => {
-            if (currentUser && postText.value.trim() !== "") {
-                try {
-                    // Store text and clear input before posting
-                    // This makes the UI feel more responsive
-                    const textToPost = postText.value;
-                    postText.value = "";
-                    
-                    await addDoc(collection(db, "posts"), {
-                        text: textToPost,
-                        username: currentUser.username,
-                        email: currentUser.email,
-                        timestamp: new Date()
-                    });
-                    
-                    // Keep focus on text area
-                    postText.focus();
-                    
-                    // Scroll to new post
-                    setTimeout(() => {
-                        scrollToLatestPost(true);
-                    }, 300);
-                } catch (err) {
-                    alert("Error posting message: " + err.message);
-                    // Restore the text in case of error
-                    if (postText.value === "") {
-                        postText.value = textToPost;
-                    }
-                }
-            }
-        };
-
-        // Format date
-        function formatDate(date) {
-            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        }
-        
-        // Check for different day
-        function isDifferentDay(date1, date2) {
-            return date1.getDate() !== date2.getDate() || 
-                   date1.getMonth() !== date2.getMonth() ||
-                   date1.getFullYear() !== date2.getFullYear();
-        }
-
-        // Show posts with improved auto-scrolling
-        const q = query(collection(db, "posts"), orderBy("timestamp", "asc"));
-        let initialLoad = true;
-        
-        onSnapshot(q, snapshot => {
-            // Get current scroll position
-            const wasAtBottom = postsDiv.scrollHeight - postsDiv.scrollTop <= postsDiv.clientHeight + 100;
-            const prevScrollHeight = postsDiv.scrollHeight;
-            let lastDate = null;
-            
-            // Clear and rebuild posts
-            postsDiv.innerHTML = "";
-            
-            snapshot.forEach(doc => {
-                const postData = doc.data();
-                const postDate = postData.timestamp.toDate();
-                
-                // Add date divider if needed
-                if (!lastDate || isDifferentDay(postDate, lastDate)) {
-                    const dateDivider = document.createElement("div");
-                    dateDivider.classList.ad<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
@@ -266,7 +14,7 @@
             display: flex;
             flex-direction: column;
             height: 80vh;
-            overflow-x: hidden;
+            overflow-x: hidden; /* Voorkom horizontale scroll */
         }
 
         #posts {
@@ -274,31 +22,8 @@
             padding: 0;
             flex-grow: 1;
             overflow-y: auto;
-            overflow-x: hidden;
+            overflow-x: hidden; /* Voorkom horizontale scroll */
             margin-bottom: 20px;
-            /* Improved scrollbar styling */
-            scrollbar-width: thin;
-            scrollbar-color: #f7a800 #1e1e1e;
-        }
-
-        /* Enhanced scrollbar for WebKit browsers (Chrome, Safari, Edge) */
-        #posts::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        #posts::-webkit-scrollbar-track {
-            background: #1e1e1e;
-            border-radius: 10px;
-        }
-
-        #posts::-webkit-scrollbar-thumb {
-            background-color: #f7a800;
-            border-radius: 10px;
-            border: 2px solid #1e1e1e;
-        }
-
-        #posts::-webkit-scrollbar-thumb:hover {
-            background-color: #ffbb33;
         }
 
         .post-input-area {
@@ -306,9 +31,6 @@
             width: 100%;
             position: relative;
             z-index: 10;
-            background-color: #181818;
-            border-top: 1px solid #333;
-            padding-top: 15px;
         }
 
         #postText {
@@ -322,7 +44,7 @@
             resize: vertical;
             margin-bottom: 15px;
             transition: border-color 0.3s ease;
-            box-sizing: border-box;
+            box-sizing: border-box; /* Zorg dat padding binnen breedte blijft */
         }
 
         #postText:focus {
@@ -355,7 +77,7 @@
             border: 1px solid #333;
             transition: background-color 0.3s ease;
             width: 100%;
-            box-sizing: border-box;
+            box-sizing: border-box; /* Voorkom overflow */
         }
 
         .post-header {
@@ -438,44 +160,7 @@
             right: 0;
         }
 
-        /* Improved mobile layout */
         @media (max-width: 600px) {
-            body {
-                position: relative;
-                height: 100vh;
-                overflow: hidden;
-            }
-            
-            header {
-                position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                z-index: 1000;
-                background-color: #121212;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-            }
-            
-            /* Mobile navigation styling */
-            nav ul {
-                display: flex;
-                flex-wrap: nowrap;
-                overflow-x: auto;
-                -webkit-overflow-scrolling: touch;
-                padding: 10px 0;
-                margin: 0;
-                white-space: nowrap;
-            }
-            
-            nav ul li {
-                display: inline-block;
-                margin-right: 10px;
-            }
-            
-            nav ul li:last-child {
-                margin-right: 15px;
-            }
-            
             .post-header {
                 flex-direction: column;
                 align-items: flex-start;
@@ -485,71 +170,36 @@
                 margin-top: 5px;
             }
 
-            main.content {
-                position: fixed;
-                top: 85px; /* Header height */
-                left: 0;
-                right: 0;
-                bottom: 0;
-                padding: 10px;
-                overflow: hidden;
-            }
-
             #forumSection {
-                height: 100%;
-                padding: 10px;
-                display: flex;
-                flex-direction: column;
-                position: relative;
-            }
-
-            h2 {
-                margin-top: 0;
-                margin-bottom: 15px;
-            }
-
-            #posts {
-                flex: 1;
-                overflow-y: auto;
-                padding-bottom: 140px; /* Space for input area + extra padding */
-                margin-bottom: 0;
-                -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+                height: calc(100vh - 120px); /* Aangepast voor header/footer */
+                padding-bottom: 80px;
+                overflow-x: hidden; /* Voorkom horizontale scroll */
             }
 
             .post-input-area {
-                position: fixed;
+                position: sticky;
                 bottom: 0;
-                left: 0;
-                right: 0;
                 background-color: #181818;
-                padding: 15px;
-                border-top: 1px solid #333;
-                z-index: 999;
-                max-width: 100%;
-                width: 100%;
-                box-sizing: border-box;
+                padding: 10px 0;
+                z-index: 100; /* Boven toetsenbord */
             }
 
             #postText {
-                min-height: 60px;
+                min-height: 80px;
                 margin-bottom: 10px;
-                width: 100%;
-                max-height: 80px; /* Limited height on mobile */
             }
 
             #postBtn {
-                margin-bottom: 5px;
-                width: 100%;
+                margin-bottom: 10px;
             }
 
-            footer {
-                display: none; /* Hide footer on mobile for more space */
+            #posts {
+                padding-bottom: 150px; /* Ruimte voor invoerveld en knop */
             }
         }
     </style>
 </head>
 <body>
-    <!-- Keep header and navigation as is -->
     <header>
         <div class="logo">
             <h1>Jennix</h1>
@@ -648,66 +298,6 @@
         const postText = document.getElementById("postText");
         const postsDiv = document.getElementById("posts");
 
-        // Always scroll to bottom function - improved version
-        function scrollToLatestPost(force = false) {
-            if (postsDiv.lastElementChild) {
-                // Use smooth scrolling for better user experience
-                postsDiv.scrollTo({
-                    top: postsDiv.scrollHeight,
-                    behavior: force ? 'auto' : 'smooth'
-                });
-            }
-        }
-
-        // Improved keyboard handling for mobile
-        function setupMobileKeyboardHandling() {
-            if (window.innerWidth <= 600) {
-                // When the text area gets focus
-                postText.addEventListener('focus', () => {
-                    // Small delay to let keyboard appear first
-                    setTimeout(() => {
-                        // Ensure posts are visible above input
-                        scrollToLatestPost(true);
-                        
-                        // Make sure the window scrolls properly on iOS
-                        window.scrollTo(0, 0);
-                        
-                        // Ensure the post input stays in view
-                        document.querySelector('.post-input-area').scrollIntoView(false);
-                    }, 300);
-                });
-                
-                // Handle viewport changes (keyboard appearing/disappearing)
-                const originalHeight = window.innerHeight;
-                window.addEventListener('resize', () => {
-                    // If keyboard is showing (height reduced significantly)
-                    if (window.innerHeight < originalHeight * 0.8) {
-                        if (document.activeElement === postText) {
-                            // Reposition view so text input is above keyboard
-                            setTimeout(() => {
-                                document.querySelector('.post-input-area').scrollIntoView(false);
-                            }, 100);
-                        }
-                    } else {
-                        // When keyboard closes, scroll to the latest post
-                        scrollToLatestPost();
-                    }
-                });
-                
-                // Handle orientation changes
-                window.addEventListener('orientationchange', () => {
-                    setTimeout(scrollToLatestPost, 300);
-                });
-            }
-        }
-
-        // Call setup functions
-        window.addEventListener('load', () => {
-            setupMobileKeyboardHandling();
-            // Initial scroll to latest post
-            setTimeout(scrollToLatestPost, 500); 
-        });
-
         // Sign In
         signInForm.onsubmit = async (e) => {
             e.preventDefault();
@@ -778,28 +368,18 @@
             forumSection.style.display = "block";
         });
 
-        // Post message with improved scrolling
+        // Post
         postBtn.onclick = async () => {
             if (currentUser && postText.value.trim() !== "") {
-                try {
-                    await addDoc(collection(db, "posts"), {
-                        text: postText.value,
-                        username: currentUser.username,
-                        email: currentUser.email,
-                        timestamp: new Date()
-                    });
-                    postText.value = "";
-                    
-                    // Keep focus on text area for continued typing
-                    postText.focus();
-                    
-                    // Ensure auto-scroll to new post
-                    setTimeout(() => {
-                        scrollToLatestPost(true);
-                    }, 300);
-                } catch (err) {
-                    alert("Error posting message: " + err.message);
-                }
+                await addDoc(collection(db, "posts"), {
+                    text: postText.value,
+                    username: currentUser.username,
+                    email: currentUser.email,
+                    timestamp: new Date()
+                });
+                postText.value = "";
+                // Focus op invoerveld na posten (voor mobiel)
+                postText.focus();
             }
         };
 
@@ -815,15 +395,10 @@
                    date1.getFullYear() !== date2.getFullYear();
         }
 
-        // Show posts with improved auto-scrolling
+        // Show posts
         const q = query(collection(db, "posts"), orderBy("timestamp", "asc"));
-        let initialLoad = true;
-        
         onSnapshot(q, snapshot => {
             let lastDate = null;
-            const wasAtBottom = postsDiv.scrollHeight - postsDiv.scrollTop <= postsDiv.clientHeight + 50;
-            const prevScrollHeight = postsDiv.scrollHeight;
-            
             postsDiv.innerHTML = "";
             
             snapshot.forEach(doc => {
@@ -863,22 +438,22 @@
                 postsDiv.appendChild(postDiv);
             });
             
-            // Smart scrolling decision:
-            // 1. Always scroll on initial load
-            // 2. Only auto-scroll if user was already near bottom
-            // 3. Otherwise maintain relative scroll position
-            if (initialLoad || wasAtBottom || document.activeElement === postText) {
-                scrollToLatestPost(initialLoad);
-            } else {
-                // Keep same relative scroll position when new content loads
-                const newScrollHeight = postsDiv.scrollHeight;
-                const scrollDiff = newScrollHeight - prevScrollHeight;
-                if (scrollDiff > 0) {
-                    postsDiv.scrollTop += scrollDiff;
-                }
+            // Centreer op de laatste post (met timeout voor mobiele browsers)
+            const lastPost = postsDiv.lastElementChild;
+            if (lastPost) {
+                setTimeout(() => {
+                    lastPost.scrollIntoView({ behavior: "smooth", block: "center" });
+                }, 100); // Kleine vertraging voor mobiele rendering
             }
-            
-            initialLoad = false;
+        });
+
+        // Zorg dat invoerveld in beeld blijft bij focus (mobiel)
+        postText.addEventListener('focus', () => {
+            setTimeout(() => {
+                postText.scrollIntoView({ behavior: "smooth", block: "end" });
+                const inputArea = document.querySelector('.post-input-area');
+                inputArea.scrollIntoView({ behavior: "smooth", block: "end" });
+            }, 300); // Wacht op toetsenbordanimatie
         });
 
         // Modals
@@ -902,15 +477,6 @@
             closeSignUpModal();
             openSignInModal();
         };
-
-        // Add keyboard shortcut for posting messages
-        postText.addEventListener('keydown', (e) => {
-            // Ctrl/Cmd + Enter to post
-            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && !postBtn.disabled) {
-                e.preventDefault();
-                postBtn.click();
-            }
-        });
     </script>
 </body>
 </html>
