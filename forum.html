@@ -1,260 +1,245 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Jennix | Forum</title>
-  <link rel="stylesheet" href="style.css" />
-  <style>
-    .post {
-      border-bottom: 1px solid #eee;
-      padding: 10px 0;
-    }
-    .post-header {
-      display: flex;
-      justify-content: space-between;
-      color: #666;
-      font-size: 0.8em;
-      margin-bottom: 5px;
-    }
-    .post-content {
-      font-size: 1em;
-    }
-    .modal-content input {
-      display: block;
-      width: 100%;
-      margin-bottom: 10px;
-      padding: 8px;
-    }
-  </style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Jennix | Forum</title>
+    <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <header>
-    <div class="logo">
-      <h1>Jennix</h1>
+    <header>
+        <div class="logo">
+            <h1>Jennix</h1>
+        </div>
+        <nav>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="news.html">News</a></li>
+                <li><a href="gallery.html">Gallery</a></li>
+                <li><a href="forum.html" class="active">Forum</a></li>
+                <li><a href="about.html">About</a></li>
+                <button class="sign-in-button" onclick="openSignInModal()">Sign In</button>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="content">
+        <!-- Forum Section -->
+        <section id="forumSection" style="display:none;">
+            <h2>Community Forum</h2>
+            <textarea id="postText" placeholder="Share something about Jenna..."></textarea>
+            <button id="postBtn" class="cta-button">Post</button>
+            <div id="posts" style="margin-top: 20px;"></div>
+            <button id="logoutBtn" class="cta-button" style="display:none;">Log Out</button>
+        </section>
+    </main>
+
+    <!-- Sign In Modal -->
+    <div id="signInModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeSignInModal()">&times;</span>
+            <h3>Sign In to Jennix</h3>
+            <form id="signInForm">
+                <label for="signInEmail">Email</label>
+                <input type="email" id="signInEmail" placeholder="Enter your email" required />
+                <label for="signInPassword">Password</label>
+                <input type="password" id="signInPassword" placeholder="Enter your password" required />
+                <button type="submit">Sign In</button>
+            </form>
+            <p class="switch-text">Don't have an account? <a href="#" onclick="switchToSignUp()">Sign Up</a></p>
+        </div>
     </div>
-    <nav>
-      <ul>
-        <li><a href="index.html">Home</a></li>
-        <li><a href="news.html">News</a></li>
-        <li><a href="gallery.html">Gallery</a></li>
-        <li><a href="forum.html" class="active">Forum</a></li>
-        <li><a href="about.html">About</a></li>
-        <li><button class="sign-in-button" onclick="openSignInModal()">Sign In</button></li>
-        <li><button id="logoutBtn" style="display:none;">Log Out</button></li>
-      </ul>
-    </nav>
-  </header>
 
-  <!-- Forum Section -->
-  <section id="forumSection" style="display:none; padding: 20px;">
-    <h2>Community Forum</h2>
-    <textarea id="postText" placeholder="Share something about Jenna..."></textarea>
-    <button id="postBtn">Post</button>
-    <div id="posts" style="margin-top: 20px;"></div>
-  </section>
-
-  <!-- Sign In Modal -->
-  <div id="signInModal" class="modal">
-    <div class="modal-content">
-      <span class="close-button" onclick="closeSignInModal()">&times;</span>
-      <h3>Sign In to Jennix</h3>
-      <form id="signInForm">
-        <input type="email" id="signInEmail" placeholder="Enter your email" required />
-        <input type="password" id="signInPassword" placeholder="Enter your password" required />
-        <button type="submit">Sign In</button>
-      </form>
-      <p class="switch-text">Don't have an account? <a href="#" onclick="switchToSignUp()">Sign Up</a></p>
+    <!-- Sign Up Modal -->
+    <div id="signUpModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeSignUpModal()">&times;</span>
+            <h3>Create a Jennix Account</h3>
+            <form id="signUpForm">
+                <label for="signUpUsername">Username</label>
+                <input type="text" id="signUpUsername" placeholder="Choose a username" required minlength="3" maxlength="20" />
+                <label for="signUpEmail">Email</label>
+                <input type="email" id="signUpEmail" placeholder="Enter your email" required />
+                <label for="signUpPassword">Password</label>
+                <input type="password" id="signUpPassword" placeholder="Choose a password" required minlength="6" />
+                <button type="submit">Sign Up</button>
+            </form>
+            <p class="switch-text">Already have an account? <a href="#" onclick="switchToSignIn()">Sign In</a></p>
+        </div>
     </div>
-  </div>
 
-  <!-- Sign Up Modal -->
-  <div id="signUpModal" class="modal">
-    <div class="modal-content">
-      <span class="close-button" onclick="closeSignUpModal()">&times;</span>
-      <h3>Create a Jennix Account</h3>
-      <form id="signUpForm">
-        <input type="text" id="signUpUsername" placeholder="Choose a username" required minlength="3" maxlength="20" />
-        <input type="email" id="signUpEmail" placeholder="Enter your email" required />
-        <input type="password" id="signUpPassword" placeholder="Choose a password" required minlength="6" />
-        <button type="submit">Sign Up</button>
-      </form>
-      <p class="switch-text">Already have an account? <a href="#" onclick="switchToSignIn()">Sign In</a></p>
-    </div>
-  </div>
+    <footer>
+        <p>&copy; 2025 Jennix. All rights reserved.</p>
+    </footer>
 
-  <footer>
-    <p>&copy; 2025 Jennix. All rights reserved.</p>
-  </footer>
+    <!-- Firebase + App Logic -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, setDoc, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-firestore.js";
 
-  <!-- Firebase + App Logic -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-app.js";
-    import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-auth.js";
-    import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, setDoc, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-firestore.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyDsb7m4EijaU3NNxwoos8y6egI29nfbChk",
-      authDomain: "jennix-777e1.firebaseapp.com",
-      projectId: "jennix-777e1",
-      storageBucket: "jennix-777e1.appspot.com",
-      messagingSenderId: "673075142639",
-      appId: "1:673075142639:web:ea93e3ae1b244463ca201a",
-      measurementId: "G-HKJ85NVGF4"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-
-    const signInForm = document.getElementById("signInForm");
-    const signUpForm = document.getElementById("signUpForm");
-    const logoutBtn = document.getElementById("logoutBtn");
-    const forumSection = document.getElementById("forumSection");
-    const postBtn = document.getElementById("postBtn");
-    const postText = document.getElementById("postText");
-    const postsDiv = document.getElementById("posts");
-
-    // Sign In
-    signInForm.onsubmit = async (e) => {
-      e.preventDefault();
-      const email = document.getElementById("signInEmail").value;
-      const password = document.getElementById("signInPassword").value;
-      
-      try {
-        await signInWithEmailAndPassword(auth, email, password);
-        closeSignInModal();
-      } catch (err) {
-        alert("Error: " + err.message);
-      }
-    };
-
-    // Sign Up
-    signUpForm.onsubmit = async (e) => {
-      e.preventDefault();
-      const username = document.getElementById("signUpUsername").value.trim();
-      const email = document.getElementById("signUpEmail").value;
-      const password = document.getElementById("signUpPassword").value;
-      
-      // Validate username
-      if (username.length < 3 || username.length > 20) {
-        alert("Username must be between 3 and 20 characters.");
-        return;
-      }
-
-      try {
-        // Create user
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        const user = userCredential.user;
-
-        // Save user profile with username
-        await setDoc(doc(db, "users", user.uid), {
-          username: username,
-          email: email
-        });
-
-        alert("Account created!");
-        closeSignUpModal();
-      } catch (err) {
-        alert("Error: " + err.message);
-      }
-    };
-
-    // Log out
-    logoutBtn.onclick = () => {
-      signOut(auth);
-    };
-
-    // Auth state observer
-    let currentUser = null;
-    onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        // Fetch user profile to get username
-        const userDoc = await getDoc(doc(db, "users", user.uid));
-        currentUser = {
-          ...user,
-          username: userDoc.data().username
+        const firebaseConfig = {
+            apiKey: "AIzaSyDsb7m4EijaU3NNxwoos8y6egI29nfbChk",
+            authDomain: "jennix-777e1.firebaseapp.com",
+            projectId: "jennix-777e1",
+            storageBucket: "jennix-777e1.appspot.com",
+            messagingSenderId: "673075142639",
+            appId: "1:673075142639:web:ea93e3ae1b244463ca201a",
+            measurementId: "G-HKJ85NVGF4"
         };
 
-        forumSection.style.display = "block";
-        logoutBtn.style.display = "inline";
-      } else {
-        currentUser = null;
-        forumSection.style.display = "none";
-        logoutBtn.style.display = "none";
-      }
-    });
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
 
-    // Post
-    postBtn.onclick = async () => {
-      if (currentUser && postText.value.trim() !== "") {
-        await addDoc(collection(db, "posts"), {
-          text: postText.value,
-          username: currentUser.username,
-          email: currentUser.email,
-          timestamp: new Date()
+        const signInForm = document.getElementById("signInForm");
+        const signUpForm = document.getElementById("signUpForm");
+        const logoutBtn = document.getElementById("logoutBtn");
+        const forumSection = document.getElementById("forumSection");
+        const postBtn = document.getElementById("postBtn");
+        const postText = document.getElementById("postText");
+        const postsDiv = document.getElementById("posts");
+
+        // Sign In
+        signInForm.onsubmit = async (e) => {
+            e.preventDefault();
+            const email = document.getElementById("signInEmail").value;
+            const password = document.getElementById("signInPassword").value;
+            
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                closeSignInModal();
+            } catch (err) {
+                alert("Error: " + err.message);
+            }
+        };
+
+        // Sign Up
+        signUpForm.onsubmit = async (e) => {
+            e.preventDefault();
+            const username = document.getElementById("signUpUsername").value.trim();
+            const email = document.getElementById("signUpEmail").value;
+            const password = document.getElementById("signUpPassword").value;
+            
+            // Validate username
+            if (username.length < 3 || username.length > 20) {
+                alert("Username must be between 3 and 20 characters.");
+                return;
+            }
+
+            try {
+                // Create user
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+
+                // Save user profile with username
+                await setDoc(doc(db, "users", user.uid), {
+                    username: username,
+                    email: email
+                });
+
+                alert("Account created!");
+                closeSignUpModal();
+            } catch (err) {
+                alert("Error: " + err.message);
+            }
+        };
+
+        // Log out
+        logoutBtn.onclick = () => {
+            signOut(auth);
+        };
+
+        // Auth state observer
+        let currentUser = null;
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                // Fetch user profile to get username
+                const userDoc = await getDoc(doc(db, "users", user.uid));
+                currentUser = {
+                    ...user,
+                    username: userDoc.data().username
+                };
+
+                forumSection.style.display = "block";
+                logoutBtn.style.display = "inline-block";
+            } else {
+                currentUser = null;
+                forumSection.style.display = "none";
+                logoutBtn.style.display = "none";
+            }
         });
-        postText.value = "";
-      }
-    };
 
-    // Show posts
-    const q = query(collection(db, "posts"), orderBy("timestamp", "desc"));
-    onSnapshot(q, snapshot => {
-      postsDiv.innerHTML = "";
-      snapshot.forEach(doc => {
-        const postData = doc.data();
-        const postDiv = document.createElement("div");
-        postDiv.classList.add("post");
-        
-        // Create post header with username and timestamp
-        const postHeader = document.createElement("div");
-        postHeader.classList.add("post-header");
-        
-        const usernameSpan = document.createElement("span");
-        usernameSpan.textContent = postData.username;
-        
-        const timestampSpan = document.createElement("span");
-        const postDate = postData.timestamp.toDate();
-        timestampSpan.textContent = postDate.toLocaleString();
-        
-        postHeader.appendChild(usernameSpan);
-        postHeader.appendChild(timestampSpan);
-        
-        // Create post content
-        const postContent = document.createElement("div");
-        postContent.classList.add("post-content");
-        postContent.textContent = postData.text;
-        
-        // Append header and content to post div
-        postDiv.appendChild(postHeader);
-        postDiv.appendChild(postContent);
-        
-        postsDiv.appendChild(postDiv);
-      });
-    });
+        // Post
+        postBtn.onclick = async () => {
+            if (currentUser && postText.value.trim() !== "") {
+                await addDoc(collection(db, "posts"), {
+                    text: postText.value,
+                    username: currentUser.username,
+                    email: currentUser.email,
+                    timestamp: new Date()
+                });
+                postText.value = "";
+            }
+        };
 
-    // Modals
-    window.openSignInModal = () => {
-      document.getElementById("signInModal").style.display = "block";
-    };
-    window.closeSignInModal = () => {
-      document.getElementById("signInModal").style.display = "none";
-    };
-    window.openSignUpModal = () => {
-      document.getElementById("signUpModal").style.display = "block";
-    };
-    window.closeSignUpModal = () => {
-      document.getElementById("signUpModal").style.display = "none";
-    };
-    window.switchToSignUp = () => {
-      closeSignInModal();
-      openSignUpModal();
-    };
-    window.switchToSignIn = () => {
-      closeSignUpModal();
-      openSignInModal();
-    };
-  </script>
+        // Show posts
+        const q = query(collection(db, "posts"), orderBy("timestamp", "desc"));
+        onSnapshot(q, snapshot => {
+            postsDiv.innerHTML = "";
+            snapshot.forEach(doc => {
+                const postData = doc.data();
+                const postDiv = document.createElement("div");
+                postDiv.classList.add("post");
+                
+                // Create post header with username and timestamp
+                const postHeader = document.createElement("div");
+                postHeader.classList.add("post-header");
+                
+                const usernameSpan = document.createElement("span");
+                usernameSpan.textContent = postData.username;
+                
+                const timestampSpan = document.createElement("span");
+                const postDate = postData.timestamp.toDate();
+                timestampSpan.textContent = postDate.toLocaleString();
+                
+                postHeader.appendChild(usernameSpan);
+                postHeader.appendChild(timestampSpan);
+                
+                // Create post content
+                const postContent = document.createElement("div");
+                postContent.classList.add("post-content");
+                postContent.textContent = postData.text;
+                
+                // Append header and content to post div
+                postDiv.appendChild(postHeader);
+                postDiv.appendChild(postContent);
+                
+                postsDiv.appendChild(postDiv);
+            });
+        });
+
+        // Modals
+        window.openSignInModal = () => {
+            document.getElementById("signInModal").style.display = "flex";
+        };
+        window.closeSignInModal = () => {
+            document.getElementById("signInModal").style.display = "none";
+        };
+        window.openSignUpModal = () => {
+            document.getElementById("signUpModal").style.display = "flex";
+        };
+        window.closeSignUpModal = () => {
+            document.getElementById("signUpModal").style.display = "none";
+        };
+        window.switchToSignUp = () => {
+            closeSignInModal();
+            openSignUpModal();
+        };
+        window.switchToSignIn = () => {
+            closeSignUpModal();
+            openSignInModal();
+        };
+    </script>
 </body>
 </html>
