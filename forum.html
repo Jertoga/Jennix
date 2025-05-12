@@ -8,7 +8,7 @@
     <style>
         /* Additional Forum-Specific Styling */
         #forumSection {
-            max-width: 800px; /* Increased from 600px */
+            max-width: 800px;
             margin: 0 auto;
             padding: 20px;
             display: flex;
@@ -27,6 +27,8 @@
         .post-input-area {
             margin-top: auto;
             width: 100%;
+            position: relative;
+            z-index: 10; /* Boven andere content */
         }
 
         #postText {
@@ -47,9 +49,21 @@
             border-color: #f7a800;
         }
 
+        #postText:disabled {
+            background-color: #2a2a2a;
+            color: #666;
+            cursor: not-allowed;
+        }
+
         #postBtn {
             width: 100%;
             margin-bottom: 20px;
+        }
+
+        #postBtn:disabled {
+            background-color: #666;
+            cursor: not-allowed;
+            opacity: 0.6;
         }
 
         .post {
@@ -85,6 +99,9 @@
         .post-content {
             color: #ddd;
             line-height: 1.6;
+            word-wrap: break-word; /* Lange woorden afbreken */
+            overflow-wrap: break-word; /* Compatibiliteit */
+            max-width: 100%; /* Voorkom horizontale overflow */
         }
 
         #logoutBtn {
@@ -147,6 +164,31 @@
             .post-header span:last-child {
                 margin-top: 5px;
             }
+
+            #forumSection {
+                height: calc(100vh - 100px); /* Rekening houden met header/footer */
+                padding-bottom: 60px; /* Ruimte voor toetsenbord */
+            }
+
+            .post-input-area {
+                position: sticky;
+                bottom: 0;
+                background-color: #181818; /* Match main background */
+                padding: 10px 0;
+            }
+
+            #postText {
+                min-height: 80px;
+                margin-bottom: 10px;
+            }
+
+            #postBtn {
+                margin-bottom: 10px;
+            }
+
+            #posts {
+                padding-bottom: 120px; /* Ruimte voor invoerveld */
+            }
         }
     </style>
 </head>
@@ -172,12 +214,12 @@
 
     <main class="content">
         <!-- Forum Section -->
-        <section id="forumSection" style="display:none;">
+        <section id="forumSection">
             <h2>Community Forum</h2>
             <div id="posts"></div>
             <div class="post-input-area">
-                <textarea id="postText" placeholder="Share something about Jenna..."></textarea>
-                <button id="postBtn" class="cta-button">Post</button>
+                <textarea id="postText" placeholder="Sign in to post a comment..."></textarea>
+                <button id="postBtn" class="cta-button" disabled>Post</button>
             </div>
         </section>
     </main>
@@ -185,7 +227,7 @@
     <!-- Sign In Modal -->
     <div id="signInModal" class="modal">
         <div class="modal-content">
-            <span class="close-btn" onclick="closeSignInModal()">&times;</span>
+            <span class="close-btn" onclick="closeSignInModal()">×</span>
             <h3>Sign In to Jennix</h3>
             <form id="signInForm">
                 <label for="signInEmail">Email</label>
@@ -201,7 +243,7 @@
     <!-- Sign Up Modal -->
     <div id="signUpModal" class="modal">
         <div class="modal-content">
-            <span class="close-btn" onclick="closeSignUpModal()">&times;</span>
+            <span class="close-btn" onclick="closeSignUpModal()">×</span>
             <h3>Create a Jennix Account</h3>
             <form id="signUpForm">
                 <label for="signUpUsername">Username</label>
@@ -217,7 +259,7 @@
     </div>
 
     <footer>
-        <p>&copy; 2025 Jennix. All rights reserved.</p>
+        <p>© 2025 Jennix. All rights reserved.</p>
     </footer>
 
     <!-- Firebase + App Logic -->
@@ -270,23 +312,18 @@
             const email = document.getElementById("signUpEmail").value;
             const password = document.getElementById("signUpPassword").value;
             
-            // Validate username
             if (username.length < 3 || username.length > 20) {
                 alert("Username must be between 3 and 20 characters.");
                 return;
             }
 
             try {
-                // Create user
                 const userCredential = await createUserWithEmailAndPassword(auth, email, password);
                 const user = userCredential.user;
-
-                // Save user profile with username
                 await setDoc(doc(db, "users", user.uid), {
                     username: username,
                     email: email
                 });
-
                 alert("Account created!");
                 closeSignUpModal();
             } catch (err) {
@@ -303,23 +340,26 @@
         let currentUser = null;
         onAuthStateChanged(auth, async (user) => {
             if (user) {
-                // Fetch user profile to get username
                 const userDoc = await getDoc(doc(db, "users", user.uid));
                 currentUser = {
                     ...user,
                     username: userDoc.data().username
                 };
-
-                // Update UI for logged-in state
-                forumSection.style.display = "block";
                 logoutBtn.style.display = "inline-block";
                 authButton.classList.add('hidden');
+                postText.disabled = false;
+                postText.placeholder = "Share something about Jenna...";
+                postBtn.disabled = false;
             } else {
                 currentUser = null;
-                forumSection.style.display = "none";
                 logoutBtn.style.display = "none";
                 authButton.classList.remove('hidden');
+                postText.disabled = true;
+                postText.placeholder = "Sign in to post a comment...";
+                postBtn.disabled = true;
             }
+            // Forum altijd zichtbaar
+            forumSection.style.display = "block";
         });
 
         // Post
@@ -335,19 +375,19 @@
             }
         };
 
-        // Function to format date in a readable way without seconds
+        // Format date
         function formatDate(date) {
             return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         }
         
-        // Function to check if a date is a different day than another date
+        // Check for different day
         function isDifferentDay(date1, date2) {
             return date1.getDate() !== date2.getDate() || 
                    date1.getMonth() !== date2.getMonth() ||
                    date1.getFullYear() !== date2.getFullYear();
         }
 
-        // Show posts - Use asc order to show oldest first
+        // Show posts
         const q = query(collection(db, "posts"), orderBy("timestamp", "asc"));
         onSnapshot(q, snapshot => {
             let lastDate = null;
@@ -357,7 +397,6 @@
                 const postData = doc.data();
                 const postDate = postData.timestamp.toDate();
                 
-                // Check if we need to add a date divider
                 if (!lastDate || isDifferentDay(postDate, lastDate)) {
                     const dateDivider = document.createElement("div");
                     dateDivider.classList.add("date-divider");
@@ -369,7 +408,6 @@
                 const postDiv = document.createElement("div");
                 postDiv.classList.add("post");
                 
-                // Create post header with username and timestamp
                 const postHeader = document.createElement("div");
                 postHeader.classList.add("post-header");
                 
@@ -382,20 +420,21 @@
                 postHeader.appendChild(usernameSpan);
                 postHeader.appendChild(timestampSpan);
                 
-                // Create post content
                 const postContent = document.createElement("div");
                 postContent.classList.add("post-content");
                 postContent.textContent = postData.text;
                 
-                // Append header and content to post div
                 postDiv.appendChild(postHeader);
                 postDiv.appendChild(postContent);
                 
                 postsDiv.appendChild(postDiv);
             });
             
-            // Scroll to bottom to see newest posts
-            postsDiv.scrollTop = postsDiv.scrollHeight;
+            // Centreer op de laatste post
+            const lastPost = postsDiv.lastElementChild;
+            if (lastPost) {
+                lastPost.scrollIntoView({ behavior: "smooth", block: "center" });
+            }
         });
 
         // Modals
