@@ -13,8 +13,8 @@
             padding: 20px;
             display: flex;
             flex-direction: column;
-            height: 80vh;
-            overflow-x: hidden; /* Voorkom horizontale scroll */
+            height: calc(100vh - 60px);
+            overflow-x: hidden;
         }
 
         #posts {
@@ -22,15 +22,15 @@
             padding: 0;
             flex-grow: 1;
             overflow-y: auto;
-            overflow-x: hidden; /* Voorkom horizontale scroll */
+            overflow-x: hidden;
             margin-bottom: 20px;
         }
 
         .post-input-area {
-            margin-top: auto;
             width: 100%;
             position: relative;
-            z-index: 10;
+            z-index: 100;
+            margin-top: auto;
         }
 
         #postText {
@@ -40,11 +40,11 @@
             color: #fff;
             padding: 12px;
             border-radius: 6px;
-            min-height: 100px;
+            min-height: 80px;
             resize: vertical;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
             transition: border-color 0.3s ease;
-            box-sizing: border-box; /* Zorg dat padding binnen breedte blijft */
+            box-sizing: border-box;
         }
 
         #postText:focus {
@@ -60,7 +60,7 @@
 
         #postBtn {
             width: 100%;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
         }
 
         #postBtn:disabled {
@@ -77,7 +77,7 @@
             border: 1px solid #333;
             transition: background-color 0.3s ease;
             width: 100%;
-            box-sizing: border-box; /* Voorkom overflow */
+            box-sizing: border-box;
         }
 
         .post-header {
@@ -171,30 +171,46 @@
             }
 
             #forumSection {
-                height: calc(100vh - 120px); /* Aangepast voor header/footer */
-                padding-bottom: 80px;
-                overflow-x: hidden; /* Voorkom horizontale scroll */
+                height: calc(100vh - 120px);
+                padding-bottom: 0;
+                overflow-x: hidden;
             }
 
             .post-input-area {
-                position: sticky;
-                bottom: 0;
+                position: fixed;
+                bottom: 60px; /* Boven footer */
                 background-color: #181818;
                 padding: 10px 0;
-                z-index: 100; /* Boven toetsenbord */
+                z-index: 100;
+                width: calc(100% - 40px);
+                max-width: 800px;
+                transition: bottom 0.3s ease;
+            }
+
+            .post-input-area.focused {
+                position: fixed;
+                bottom: 0; /* Boven toetsenbord */
+                padding-bottom: 5px;
             }
 
             #postText {
-                min-height: 80px;
-                margin-bottom: 10px;
+                min-height: 60px;
+                margin-bottom: 5px;
             }
 
             #postBtn {
-                margin-bottom: 10px;
+                margin-bottom: 5px;
             }
 
             #posts {
-                padding-bottom: 150px; /* Ruimte voor invoerveld en knop */
+                padding-bottom: 200px; /* Ruimte voor invoerveld, knop en footer */
+            }
+
+            footer {
+                position: fixed;
+                bottom: 0;
+                width: 100%;
+                z-index: 50;
             }
         }
     </style>
@@ -208,7 +224,7 @@
             <ul>
                 <li><a href="index.html">Home</a></li>
                 <li><a href="news.html">News</a></li>
-                <li><a href="gallery.html">Scroll</a></li>
+                <li><a href="gallery.html">Gallery</a></li>
                 <li><a href="forum.html" class="active">Forum</a></li>
                 <li><a href="about.html">About</a></li>
                 <li>
@@ -378,7 +394,6 @@
                     timestamp: new Date()
                 });
                 postText.value = "";
-                // Focus op invoerveld na posten (voor mobiel)
                 postText.focus();
             }
         };
@@ -438,22 +453,43 @@
                 postsDiv.appendChild(postDiv);
             });
             
-            // Centreer op de laatste post (met timeout voor mobiele browsers)
+            // Scroll naar de laatste post en toon invoerveld eronder
             const lastPost = postsDiv.lastElementChild;
             if (lastPost) {
                 setTimeout(() => {
-                    lastPost.scrollIntoView({ behavior: "smooth", block: "center" });
-                }, 100); // Kleine vertraging voor mobiele rendering
+                    lastPost.scrollIntoView({ behavior: "smooth", block: "nearest" });
+                    // Zorg dat invoerveld direct onder laatste post verschijnt
+                    const inputArea = document.querySelector('.post-input-area');
+                    inputArea.scrollIntoView({ behavior: "smooth", block: "end" });
+                }, 300); // Langere timeout voor mobiele stabiliteit
             }
         });
 
-        // Zorg dat invoerveld in beeld blijft bij focus (mobiel)
+        // Beheer invoerveld positie bij focus en blur
         postText.addEventListener('focus', () => {
+            const inputArea = document.querySelector('.post-input-area');
+            inputArea.classList.add('focused');
             setTimeout(() => {
-                postText.scrollIntoView({ behavior: "smooth", block: "end" });
-                const inputArea = document.querySelector('.post-input-area');
                 inputArea.scrollIntoView({ behavior: "smooth", block: "end" });
-            }, 300); // Wacht op toetsenbordanimatie
+                // Zorg dat laatste post boven invoerveld blijft
+                const lastPost = postsDiv.lastElementChild;
+                if (lastPost) {
+                    lastPost.scrollIntoView({ behavior: "smooth", block: "nearest" });
+                }
+            }, 300);
+        });
+
+        postText.addEventListener('blur', () => {
+            const inputArea = document.querySelector('.post-input-area');
+            inputArea.classList.remove('focused');
+            // Scroll terug naar laatste post
+            const lastPost = postsDiv.lastElementChild;
+            if (lastPost) {
+                setTimeout(() => {
+                    lastPost.scrollIntoView({ behavior: "smooth", block: "nearest" });
+                    inputArea.scrollIntoView({ behavior: "smooth", block: "end" });
+                }, 300);
+            }
         });
 
         // Modals
