@@ -6,34 +6,6 @@
   <title>Forum | Jennix</title>
   <link rel="stylesheet" href="style.css" />
   <script type="module" src="firebase.js"></script>
-  <style>
-    /* Knop styling */
-    .post-button {
-      background-color: #fca311; 
-      color: white; 
-      border: none; 
-      padding: 10px 20px; 
-      font-size: 16px;
-      cursor: pointer;
-      border-radius: 5px;
-      transition: background-color 0.3s ease;
-    }
-
-    .post-button:hover {
-      background-color: #e67e22;
-    }
-
-    .forum-post-area {
-      margin-bottom: 20px;
-    }
-
-    .post {
-      margin-top: 20px;
-      padding: 10px;
-      background-color: #f1f1f1;
-      border-radius: 10px;
-    }
-  </style>
 </head>
 
 <body>
@@ -59,7 +31,7 @@
     <p>Join discussions with other Jenna Ortega fans!</p>
 
     <div class="forum-post-area">
-      <input type="text" id="postInput" placeholder="Share your thoughts..." />
+      <textarea id="postInput" placeholder="Share your thoughts..." rows="4"></textarea>
       <button class="post-button" onclick="submitPost()">Post</button>
     </div>
 
@@ -101,56 +73,27 @@
   </footer>
 
   <script>
-    // Firebase Configuratie
-    const firebaseConfig = {
-      apiKey: "YOUR_API_KEY",
-      authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-      databaseURL: "https://YOUR_PROJECT_ID.firebaseio.com",
-      projectId: "YOUR_PROJECT_ID",
-      storageBucket: "YOUR_PROJECT_ID.appspot.com",
-      messagingSenderId: "YOUR_SENDER_ID",
-      appId: "YOUR_APP_ID"
-    };
-
-    // Initialiseer Firebase
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
-
+    // De functie die het bericht verstuurt en weergeeft
     window.submitPost = function () {
       const postInput = document.getElementById('postInput');
-      const postContent = postInput.value;
+      const postContent = postInput.value.trim();
 
       if (postContent) {
-        // Maak een post container
         const postContainer = document.createElement('div');
         postContainer.classList.add('post');
         postContainer.innerHTML = `<p>${postContent}</p>`;
 
-        // Voeg de post toe aan de pagina
         const postsDiv = document.getElementById('posts');
         postsDiv.appendChild(postContainer);
 
-        // Voeg de post toe aan Firebase
-        db.collection("posts").add({
-          content: postContent,
-          timestamp: firebase.firestore.FieldValue.serverTimestamp()
-        })
-        .then(() => {
-          console.log("Post added to Firestore");
-        })
-        .catch((error) => {
-          console.error("Error adding post: ", error);
-        });
-
-        // Clear input field
-        postInput.value = ""; 
+        postInput.value = ""; // Clear the input after posting
       } else {
         alert("Please write something before posting.");
       }
     };
 
     window.openSignInModal = function () {
-      document.getElementById('signInModal').style.display = 'block';
+      document.getElementById('signInModal').style.display = 'flex';
     };
 
     window.closeSignInModal = function () {
@@ -158,7 +101,7 @@
     };
 
     window.openSignUpModal = function () {
-      document.getElementById('signUpModal').style.display = 'block';
+      document.getElementById('signUpModal').style.display = 'flex';
     };
 
     window.closeSignUpModal = function () {
