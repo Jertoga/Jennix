@@ -32,14 +32,6 @@
     </div>
   </section>
 
-  <!-- Forum -->
-  <section id="forumSection" style="display:none; padding: 20px;">
-    <h2>Community Forum</h2>
-    <textarea id="postText" placeholder="Share something about Jenna..."></textarea>
-    <button id="postBtn">Post</button>
-    <div id="posts" style="margin-top: 20px;"></div>
-  </section>
-
   <!-- Modal voor Sign In -->
   <div id="signInModal" class="modal">
     <div class="modal-content">
@@ -95,10 +87,6 @@
     const signUpForm = document.getElementById("signUpForm");
     const signInForm = document.getElementById("signInForm");
     const logoutBtn = document.getElementById("logoutBtn");
-    const forumSection = document.getElementById("forumSection");
-    const postBtn = document.getElementById("postBtn");
-    const postText = document.getElementById("postText");
-    const postsDiv = document.getElementById("posts");
 
     signUpForm.onsubmit = (e) => {
       e.preventDefault();
@@ -124,32 +112,10 @@
 
     onAuthStateChanged(auth, user => {
       if (user) {
-        forumSection.style.display = "block";
         logoutBtn.style.display = "inline";
       } else {
-        forumSection.style.display = "none";
         logoutBtn.style.display = "none";
       }
-    });
-
-    postBtn.onclick = async () => {
-      if (postText.value.trim() !== "") {
-        await addDoc(collection(db, "posts"), {
-          text: postText.value,
-          timestamp: new Date()
-        });
-        postText.value = "";
-      }
-    };
-
-    const q = query(collection(db, "posts"), orderBy("timestamp", "desc"));
-    onSnapshot(q, snapshot => {
-      postsDiv.innerHTML = "";
-      snapshot.forEach(doc => {
-        const p = document.createElement("p");
-        p.textContent = doc.data().text;
-        postsDiv.appendChild(p);
-      });
     });
 
     // Modal switching logic
