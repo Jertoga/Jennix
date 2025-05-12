@@ -13,8 +13,8 @@
             padding: 20px;
             display: flex;
             flex-direction: column;
-            height: 80vh;
-            overflow-x: hidden; /* Voorkom horizontale scroll */
+            height: calc(100vh - 60px); /* Aangepast voor header en footer */
+            overflow-x: hidden;
         }
 
         #posts {
@@ -22,7 +22,7 @@
             padding: 0;
             flex-grow: 1;
             overflow-y: auto;
-            overflow-x: hidden; /* Voorkom horizontale scroll */
+            overflow-x: hidden;
             margin-bottom: 20px;
         }
 
@@ -31,6 +31,7 @@
             width: 100%;
             position: relative;
             z-index: 10;
+            background-color: #1e1e1e; /* Match footer achtergrond */
         }
 
         #postText {
@@ -40,11 +41,11 @@
             color: #fff;
             padding: 12px;
             border-radius: 6px;
-            min-height: 100px;
+            min-height: 80px;
             resize: vertical;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
             transition: border-color 0.3s ease;
-            box-sizing: border-box; /* Zorg dat padding binnen breedte blijft */
+            box-sizing: border-box;
         }
 
         #postText:focus {
@@ -60,7 +61,7 @@
 
         #postBtn {
             width: 100%;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
         }
 
         #postBtn:disabled {
@@ -77,7 +78,7 @@
             border: 1px solid #333;
             transition: background-color 0.3s ease;
             width: 100%;
-            box-sizing: border-box; /* Voorkom overflow */
+            box-sizing: border-box;
         }
 
         .post-header {
@@ -171,30 +172,40 @@
             }
 
             #forumSection {
-                height: calc(100vh - 120px); /* Aangepast voor header/footer */
-                padding-bottom: 80px;
-                overflow-x: hidden; /* Voorkom horizontale scroll */
+                height: calc(100vh - 120px); /* Ruimte voor header en footer */
+                padding-bottom: 0; /* Geen extra padding nodig */
+                overflow-x: hidden;
             }
 
             .post-input-area {
                 position: sticky;
                 bottom: 0;
-                background-color: #181818;
+                background-color: #1e1e1e; /* Match footer */
                 padding: 10px 0;
-                z-index: 100; /* Boven toetsenbord */
+                z-index: 10; /* Standaard onder posts */
+            }
+
+            .post-input-area.focused {
+                z-index: 100; /* Boven toetsenbord bij focus */
+                background-color: #181818; /* Match main achtergrond bij typen */
             }
 
             #postText {
-                min-height: 80px;
-                margin-bottom: 10px;
+                min-height: 60px;
+                margin-bottom: 5px;
             }
 
             #postBtn {
-                margin-bottom: 10px;
+                margin-bottom: 5px;
             }
 
             #posts {
-                padding-bottom: 150px; /* Ruimte voor invoerveld en knop */
+                padding-bottom: 120px; /* Ruimte voor invoerveld boven footer */
+            }
+
+            footer {
+                position: relative;
+                z-index: 5; /* Onder invoerveld */
             }
         }
     </style>
@@ -208,7 +219,7 @@
             <ul>
                 <li><a href="index.html">Home</a></li>
                 <li><a href="news.html">News</a></li>
-                <li><a href="gallery.html">Scroll</a></li>
+                <li><a href="gallery.html">Gallery</a></li>
                 <li><a href="forum.html" class="active">Forum</a></li>
                 <li><a href="about.html">About</a></li>
                 <li>
@@ -297,6 +308,7 @@
         const postBtn = document.getElementById("postBtn");
         const postText = document.getElementById("postText");
         const postsDiv = document.getElementById("posts");
+        const inputArea = document.querySelector('.post-input-area');
 
         // Sign In
         signInForm.onsubmit = async (e) => {
@@ -378,7 +390,6 @@
                     timestamp: new Date()
                 });
                 postText.value = "";
-                // Focus op invoerveld na posten (voor mobiel)
                 postText.focus();
             }
         };
@@ -395,8 +406,8 @@
                    date1.getFullYear() !== date2.getFullYear();
         }
 
-        // Show posts
-        const q = query(collection(db, "posts"), orderBy("timestamp", "asc"));
+        // Show posts (newest first)
+        const q = query(collection(db, "posts"), orderBy("timestamp", "desc"));
         onSnapshot(q, snapshot => {
             let lastDate = null;
             postsDiv.innerHTML = "";
@@ -438,22 +449,31 @@
                 postsDiv.appendChild(postDiv);
             });
             
-            // Centreer op de laatste post (met timeout voor mobiele browsers)
-            const lastPost = postsDiv.lastElementChild;
-            if (lastPost) {
+            // Scroll naar de eerste post (nieuwste)
+            const firstPost = postsDiv.firstElementChild;
+            if (firstPost) {
                 setTimeout(() => {
-                    lastPost.scrollIntoView({ behavior: "smooth", block: "center" });
-                }, 100); // Kleine vertraging voor mobiele rendering
+                    firstPost.scrollIntoView({ behavior: "smooth", block: "start" });
+                }, 200);
             }
         });
 
-        // Zorg dat invoerveld in beeld blijft bij focus (mobiel)
+        // Dynamische positionering van invoerveld bij focus/blur
         postText.addEventListener('focus', () => {
+            inputArea.classList.add('focused');
             setTimeout(() => {
-                postText.scrollIntoView({ behavior: "smooth", block: "end" });
-                const inputArea = document.querySelector('.post-input-area');
                 inputArea.scrollIntoView({ behavior: "smooth", block: "end" });
             }, 300); // Wacht op toetsenbordanimatie
+        });
+
+        postText.addEventListener('blur', () => {
+            inputArea.classList.remove('focused');
+            setTimeout(() => {
+                const firstPost = postsDiv.firstElementChild;
+                if (firstPost) {
+                    firstPost.scrollIntoView({ behavior: "smooth", block: "start" });
+                }
+            }, 100); // Kleine vertraging na toetsenbord sluiten
         });
 
         // Modals
