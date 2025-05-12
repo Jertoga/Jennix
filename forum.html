@@ -187,6 +187,12 @@
         }
 
         @media (max-width: 600px) {
+            body {
+                position: relative;
+                height: 100%;
+                overflow: hidden;
+            }
+            
             .post-header {
                 flex-direction: column;
                 align-items: flex-start;
@@ -196,18 +202,35 @@
                 margin-top: 5px;
             }
 
+            main.content {
+                position: fixed;
+                top: 85px; /* Ongeveer de hoogte van de header */
+                left: 0;
+                right: 0;
+                bottom: 0;
+                padding: 10px;
+                overflow: hidden;
+            }
+
             #forumSection {
-                height: calc(100vh - 120px); /* Aangepast voor header/footer */
-                padding-bottom: 0;
+                height: 100%;
+                padding: 10px;
                 display: flex;
                 flex-direction: column;
+                position: relative;
+            }
+
+            h2 {
+                margin-top: 0;
+                margin-bottom: 15px;
             }
 
             #posts {
                 flex: 1;
                 overflow-y: auto;
-                padding-bottom: 20px;
+                padding-bottom: 130px; /* Ruimte voor het invoerveld */
                 margin-bottom: 0;
+                -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
             }
 
             .post-input-area {
@@ -218,7 +241,7 @@
                 background-color: #181818;
                 padding: 10px;
                 border-top: 1px solid #333;
-                z-index: 100;
+                z-index: 999; /* Hoger dan alle andere elementen */
                 max-width: 100%;
                 width: 100%;
                 box-sizing: border-box;
@@ -228,6 +251,7 @@
                 min-height: 60px;
                 margin-bottom: 10px;
                 width: 100%;
+                max-height: 100px; /* Beperk de hoogte op mobiel */
             }
 
             #postBtn {
@@ -235,13 +259,8 @@
                 width: 100%;
             }
 
-            main.content {
-                padding-bottom: 160px; /* Ruimte voor invoerveld op mobiel */
-            }
-
-            /* Betere scrollbar op mobiel */
-            #posts {
-                -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+            footer {
+                display: none; /* Verberg footer op mobiel voor meer ruimte */
             }
         }
     </style>
@@ -347,17 +366,37 @@
 
         // Functie om input veld opnieuw te positioneren bij toetsenbord op mobiel
         function adjustForKeyboard() {
+            // Alleen voor mobiele apparaten
             if (window.innerWidth <= 600) {
-                const viewportHeight = window.innerHeight;
-                document.querySelector('.post-input-area').style.bottom = '0px';
-                
-                // Zorg dat het invoerveld zichtbaar blijft wanneer het toetsenbord open is
+                // Event listener voor focus op het input veld
                 postText.addEventListener('focus', () => {
-                    // Wacht even tot het toetsenbord volledig open is
+                    // Zorg dat de invoer zichtbaar blijft en scroll naar beneden
                     setTimeout(() => {
+                        // Extra scroll voor iOS apparaten
                         window.scrollTo(0, document.body.scrollHeight);
+                        // Zorg dat de viewport meebeweegt
+                        document.body.scrollTop = document.body.scrollHeight;
+                        // Scroll posts naar beneden voor betere zichtbaarheid
+                        scrollToLatestPost();
                     }, 300);
                 });
+                
+                // Zorg dat de invoer zichtbaar blijft bij window resize (toetsenbord openen/sluiten)
+                window.addEventListener('resize', () => {
+                    // Kort timeout om de browser tijd te geven
+                    setTimeout(() => {
+                        if (document.activeElement === postText) {
+                            window.scrollTo(0, document.body.scrollHeight);
+                        }
+                    }, 100);
+                });
+            }
+        }
+
+        // Functie om naar het laatste bericht te scrollen
+        function scrollToLatestPost() {
+            if (postsDiv.lastElementChild) {
+                postsDiv.scrollTop = postsDiv.scrollHeight;
             }
         }
 
@@ -447,6 +486,8 @@
                 postText.value = "";
                 // Focus op invoerveld na posten (voor mobiel)
                 postText.focus();
+                // Scroll naar het laatste bericht
+                setTimeout(scrollToLatestPost, 300);
             }
         };
 
@@ -505,9 +546,9 @@
                 postsDiv.appendChild(postDiv);
             });
             
-            // Scroll naar beneden om nieuwste berichten te zien
+            // Scroll naar het laatste bericht na een korte vertraging
             setTimeout(() => {
-                postsDiv.scrollTop = postsDiv.scrollHeight;
+                scrollToLatestPost();
             }, 100);
         });
 
