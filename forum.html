@@ -2,43 +2,43 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Forum | Jennix</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Jennix | Jenna Ortega Fan Site</title>
   <link rel="stylesheet" href="style.css" />
-  <script type="module" src="firebase.js"></script>
 </head>
-
 <body>
   <header>
     <div class="logo">
       <h1>Jennix</h1>
-      <p>Official Jenna Ortega Fan Hub</p>
     </div>
     <nav>
       <ul>
-        <li><a href="index.html">Home</a></li>
+        <li><a href="index.html" class="active">Home</a></li>
         <li><a href="news.html">News</a></li>
         <li><a href="gallery.html">Gallery</a></li>
-        <li><a href="forum.html" class="active">Forum</a></li>
+        <li><a href="forum.html">Forum</a></li>
         <li><a href="about.html">About</a></li>
         <li><button class="sign-in-button" onclick="openSignInModal()">Sign In</button></li>
+        <li><button id="logoutBtn" style="display:none;">Log Out</button></li>
       </ul>
     </nav>
   </header>
 
-  <main class="content">
+  <section class="hero">
+    <div class="hero-content">
+      <h2>Welcome to Jennix</h2>
+      <p>Your ultimate place for everything about Jenna Ortega!</p>
+      <button class="cta-button" onclick="joinCommunity()">Join the Community</button>
+    </div>
+  </section>
+
+  <!-- Forum -->
+  <section id="forumSection" style="display:none; padding: 20px;">
     <h2>Community Forum</h2>
-    <p>Join discussions with other Jenna Ortega fans!</p>
-
-    <div class="forum-post-area">
-      <textarea id="postInput" placeholder="Share your thoughts..." rows="4"></textarea>
-      <button class="post-button" onclick="submitPost()">Post</button>
-    </div>
-
-    <div id="posts" class="posts-container">
-      <!-- Berichten worden hier weergegeven -->
-    </div>
-  </main>
+    <textarea id="postText" placeholder="Share something about Jenna..." rows="4" cols="50"></textarea>
+    <button id="postBtn">Post</button>
+    <div id="posts" style="margin-top: 20px;"></div>
+  </section>
 
   <!-- Modal voor Sign In -->
   <div id="signInModal" class="modal">
@@ -72,51 +72,109 @@
     <p>&copy; 2025 Jennix. All rights reserved.</p>
   </footer>
 
-  <script>
-    // De functie die het bericht verstuurt en weergeeft
-    window.submitPost = function () {
-      const postInput = document.getElementById('postInput');
-      const postContent = postInput.value.trim();
+  <!-- Firebase + App Logic -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-auth.js";
+    import { getFirestore, collection, addDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-firestore.js";
 
-      if (postContent) {
-        const postContainer = document.createElement('div');
-        postContainer.classList.add('post');
-        postContainer.innerHTML = `<p>${postContent}</p>`;
+    const firebaseConfig = {
+      apiKey: "AIzaSyDsb7m4EijaU3NNxwoos8y6egI29nfbChk",
+      authDomain: "jennix-777e1.firebaseapp.com",
+      projectId: "jennix-777e1",
+      storageBucket: "jennix-777e1.appspot.com",
+      messagingSenderId: "673075142639",
+      appId: "1:673075142639:web:ea93e3ae1b244463ca201a",
+      measurementId: "G-HKJ85NVGF4"
+    };
 
-        const postsDiv = document.getElementById('posts');
-        postsDiv.appendChild(postContainer);
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
 
-        postInput.value = ""; // Clear the input after posting
+    const signUpForm = document.getElementById("signUpForm");
+    const signInForm = document.getElementById("signInForm");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const forumSection = document.getElementById("forumSection");
+    const postBtn = document.getElementById("postBtn");
+    const postText = document.getElementById("postText");
+    const postsDiv = document.getElementById("posts");
+
+    signUpForm.onsubmit = (e) => {
+      e.preventDefault();
+      const email = document.getElementById("signUpEmail").value;
+      const password = document.getElementById("signUpPassword").value;
+      createUserWithEmailAndPassword(auth, email, password)
+        .then(closeSignUpModal)
+        .catch(err => alert(err.message));
+    };
+
+    signInForm.onsubmit = (e) => {
+      e.preventDefault();
+      const email = document.getElementById("signInEmail").value;
+      const password = document.getElementById("signInPassword").value;
+      signInWithEmailAndPassword(auth, email, password)
+        .then(closeSignInModal)
+        .catch(err => alert(err.message));
+    };
+
+    logoutBtn.onclick = () => {
+      signOut(auth);
+    };
+
+    onAuthStateChanged(auth, user => {
+      if (user) {
+        forumSection.style.display = "block";
+        logoutBtn.style.display = "inline";
       } else {
-        alert("Please write something before posting.");
+        forumSection.style.display = "none";
+        logoutBtn.style.display = "none";
+      }
+    });
+
+    postBtn.onclick = async () => {
+      if (postText.value.trim() !== "") {
+        await addDoc(collection(db, "posts"), {
+          text: postText.value,
+          timestamp: new Date()
+        });
+        postText.value = "";
       }
     };
 
-    window.openSignInModal = function () {
-      document.getElementById('signInModal').style.display = 'flex';
-    };
+    const q = query(collection(db, "posts"), orderBy("timestamp", "desc"));
+    onSnapshot(q, snapshot => {
+      postsDiv.innerHTML = "";
+      snapshot.forEach(doc => {
+        const p = document.createElement("p");
+        p.textContent = doc.data().text;
+        postsDiv.appendChild(p);
+      });
+    });
 
-    window.closeSignInModal = function () {
-      document.getElementById('signInModal').style.display = 'none';
+    // Modal switching logic
+    window.openSignInModal = () => {
+      document.getElementById("signInModal").style.display = "block";
     };
-
-    window.openSignUpModal = function () {
-      document.getElementById('signUpModal').style.display = 'flex';
+    window.closeSignInModal = () => {
+      document.getElementById("signInModal").style.display = "none";
     };
-
-    window.closeSignUpModal = function () {
-      document.getElementById('signUpModal').style.display = 'none';
+    window.openSignUpModal = () => {
+      document.getElementById("signUpModal").style.display = "block";
     };
-
-    window.switchToSignUp = function () {
-      window.closeSignInModal();
-      window.openSignUpModal();
+    window.closeSignUpModal = () => {
+      document.getElementById("signUpModal").style.display = "none";
     };
-
-    window.switchToSignIn = function () {
-      window.closeSignUpModal();
-      window.openSignInModal();
+    window.switchToSignUp = () => {
+      closeSignInModal();
+      openSignUpModal();
+    };
+    window.switchToSignIn = () => {
+      closeSignUpModal();
+      openSignInModal();
     };
   </script>
+
+  <script src="main.js"></script>
 </body>
 </html>
