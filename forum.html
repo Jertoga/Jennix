@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
     <title>Jennix | Forum</title>
     <link rel="stylesheet" href="style.css" />
     <style>
@@ -30,20 +31,23 @@
             flex-grow: 1;
             overflow-y: auto;
             overflow-x: hidden;
-            margin-bottom: 20px;
-            /* Belangrijk: posts krijgen padding-bottom voor ruimte boven input area */
-            padding-bottom: 20px;
+            margin-bottom: 10px;
+            /* Minder padding voor beter aansluiten op input area */
+            padding-bottom: 15px;
         }
 
         .post-input-area {
             position: sticky;
             bottom: 0;
+            left: 0;
+            right: 0;
             width: 100%;
             z-index: 100;
             background-color: #181818;
             padding: 15px;
             border-top: 1px solid #333;
             box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
+            box-sizing: border-box;
         }
 
         #postText {
@@ -197,7 +201,7 @@
             }
 
             #posts {
-                padding-bottom: 120px; /* Extra ruimte voor input area */
+                padding-bottom: 90px; /* Minder ruimte zodat berichten dichter bij input area staan */
                 height: 100%;
                 position: relative;
             }
@@ -214,6 +218,8 @@
                 /* Achtergrond matchen met pagina */
                 background-color: #181818;
                 border-top: 1px solid #333;
+                /* Belangrijke viewport setting om boven keyboard te blijven */
+                transform: translateZ(0);
             }
 
             #postText {
@@ -330,7 +336,7 @@
         const postsDiv = document.getElementById("posts");
 
         // Detecteer mobiele apparaten voor specifieke aanpassingen
-        const isMobile = window.innerWidth <= 600;
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth <= 600;
 
         // Aanpassing layout voor mobiel
         function adjustLayoutForMobile() {
@@ -342,18 +348,26 @@
                 const postInputArea = document.querySelector('.post-input-area');
                 postInputArea.style.position = 'fixed';
                 
+                // Direct viewport onderaan positioneren
+                window.scrollTo(0, 1);
+                
+                // Viewport hack om te zorgen dat alles goed zichtbaar blijft
+                document.body.style.height = window.innerHeight + 'px';
+                
+                // Force positionering onder de content maar boven toetsenbord
+                postInputArea.style.bottom = '0';
+                
                 // Pas de marginBottom aan van posts bij inladen
-                postsDiv.style.paddingBottom = "150px";
+                postsDiv.style.paddingBottom = "90px";
             }
         }
 
         // Roep direct aan bij laden
         adjustLayoutForMobile();
         
-        // Ook aanroepen bij resize
-        window.addEventListener('resize', () => {
-            adjustLayoutForMobile();
-        });
+        // Ook aanroepen bij resize en orientatieverandering
+        window.addEventListener('resize', adjustLayoutForMobile);
+        window.addEventListener('orientationchange', adjustLayoutForMobile);
 
         // Sign In
         signInForm.onsubmit = async (e) => {
@@ -428,20 +442,34 @@
         // Post - met verbeterde focus handling
         postBtn.onclick = async () => {
             if (currentUser && postText.value.trim() !== "") {
-                await addDoc(collection(db, "posts"), {
-                    text: postText.value,
-                    username: currentUser.username,
-                    email: currentUser.email,
-                    timestamp: new Date()
-                });
-                
-                // Bewaar focus en cursor positie
-                postText.value = "";
-                
-                // BELANGRIJK: Focus behouden na posten
-                setTimeout(() => {
-                    postText.focus();
-                }, 10);
+                try {
+                    // Bewaar de focus status
+                    const hadFocus = document.activeElement === postText;
+                    
+                    // Post naar Firebase
+                    await addDoc(collection(db, "posts"), {
+                        text: postText.value,
+                        username: currentUser.username,
+                        email: currentUser.email,
+                        timestamp: new Date()
+                    });
+                    
+                    // Leeg het tekstveld
+                    postText.value = "";
+                    
+                    // BELANGRIJK: focus onmiddellijk teruggeven
+                    if (hadFocus) {
+                        postText.focus();
+                    }
+                    
+                    // Extra veiligheid: focus na een korte vertraging opnieuw zetten
+                    // Dit helpt op sommige mobiele apparaten die focus verliezen door de animatie
+                    setTimeout(() => {
+                        postText.focus();
+                    }, 50);
+                } catch (err) {
+                    console.error("Error posting:", err);
+                }
             }
         };
 
@@ -457,14 +485,15 @@
                    date1.getFullYear() !== date2.getFullYear();
         }
 
-        // Een vlag om bij te houden of we al aan het scrollen zijn
-        let isScrolling = false;
-
-        // Show posts met verbeterde scrolling
+        // Show posts met verbeterde vloeiende scrolling
         const q = query(collection(db, "posts"), orderBy("timestamp", "asc"));
         onSnapshot(q, snapshot => {
             let lastDate = null;
-            const shouldScrollToBottom = postsDiv.scrollTop + postsDiv.clientHeight >= postsDiv.scrollHeight - 100;
+            // Controleer of we dichtbij het einde waren, om te bepalen of we moeten scrollen
+            const wasAtBottom = postsDiv.scrollTop + postsDiv.clientHeight >= postsDiv.scrollHeight - 150;
+            // Huidige scrollpositie onthouden
+            const currentScrollTop = postsDiv.scrollTop;
+            const oldHeight = postsDiv.scrollHeight;
             
             postsDiv.innerHTML = "";
             
@@ -505,35 +534,73 @@
                 postsDiv.appendChild(postDiv);
             });
             
-            // Alleen naar laatste bericht scrollen als we dichtbij waren
-            if (shouldScrollToBottom && !isScrolling) {
-                isScrolling = true;
-                setTimeout(() => {
-                    postsDiv.scrollTop = postsDiv.scrollHeight;
-                    isScrolling = false;
-                }, 100);
-            }
+            // Wacht een moment tot de DOM is bijgewerkt
+            setTimeout(() => {
+                // Hoogteverschil berekenen
+                const newHeight = postsDiv.scrollHeight;
+                const heightDiff = newHeight - oldHeight;
+                
+                // Als we nieuwe content hebben en dichtbij het einde waren,
+                // scroll dan soepel naar het nieuwe einde
+                if (wasAtBottom && heightDiff > 0) {
+                    // Soepel scrollen naar het einde
+                    postsDiv.scrollTo({
+                        top: postsDiv.scrollHeight,
+                        behavior: 'smooth'
+                    });
+                } else if (heightDiff > 0 && !wasAtBottom) {
+                    // Behoud de huidige scrollpositie als we niet aan het einde waren
+                    postsDiv.scrollTop = currentScrollTop;
+                }
+            }, 50);
         });
 
         // Verbeterde input handling voor mobiel
         if (isMobile) {
-            // Voorkom dat het scherm verschuift bij input focus
-            postText.addEventListener('focus', (e) => {
-                e.preventDefault();
+            // Zorg ervoor dat de input area altijd zichtbaar is
+            document.addEventListener('DOMContentLoaded', function() {
+                // Force input area naar juiste positie
+                const postInputArea = document.querySelector('.post-input-area');
                 
-                // Wacht tot toetsenbord verschijnt en scroll dan naar de input area
+                // Forceer de juiste positie bij laden
                 setTimeout(() => {
-                    window.scrollTo(0, document.body.scrollHeight);
+                    postInputArea.style.position = 'fixed';
+                    postInputArea.style.bottom = '0';
+                    postInputArea.style.left = '0';
+                    postInputArea.style.right = '0';
+                    postInputArea.style.zIndex = '9999';
+                    
+                    // Zorg ervoor dat de body de volledige hoogte gebruikt
+                    document.body.style.height = window.innerHeight + 'px';
+                    
+                    // Verhindert mobiele browser UI elementen
+                    window.scrollTo(0, 1);
+                }, 300);
+            });
+
+            // Voorkom dat het scherm verschuift bij input focus en blijf boven toetsenbord
+            postText.addEventListener('focus', (e) => {
+                // Verplaats content indien nodig
+                setTimeout(() => {
+                    const postInputArea = document.querySelector('.post-input-area');
+                    postInputArea.style.position = 'fixed';
+                    postInputArea.style.bottom = '0';
+                    
+                    // Op sommige iOS toestellen helpt dit om boven het toetsenbord te blijven
+                    if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+                        document.body.scrollTop = document.body.scrollHeight;
+                        window.scrollTo(0, document.body.scrollHeight);
+                    }
                 }, 300);
             });
             
-            // Voorkom dat scrollen naar bottom van posts het input veld verbergt
-            postsDiv.addEventListener('scroll', () => {
-                // Alleen relevant op mobiel
-                if (window.innerWidth <= 600) {
-                    const inputArea = document.querySelector('.post-input-area');
-                    inputArea.style.position = 'fixed';
-                }
+            // Extra handler voor virtueel toetsenbord verschijning
+            window.addEventListener('resize', function() {
+                // Als het scherm kleiner wordt (toetsenbord verschijnt), regel dan de positie
+                const postInputArea = document.querySelector('.post-input-area');
+                postInputArea.style.position = 'fixed';
+                postInputArea.style.bottom = '0';
+                postInputArea.style.zIndex = '9999';
             });
         }
 
