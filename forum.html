@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Jennix | Jenna Ortega Fan Site</title>
+  <title>Jennix | Forum</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -13,10 +13,10 @@
     </div>
     <nav>
       <ul>
-        <li><a href="index.html" class="active">Home</a></li>
+        <li><a href="index.html">Home</a></li>
         <li><a href="news.html">News</a></li>
         <li><a href="gallery.html">Gallery</a></li>
-        <li><a href="forum.html">Forum</a></li>
+        <li><a href="forum.html" class="active">Forum</a></li>
         <li><a href="about.html">About</a></li>
         <li><button class="sign-in-button" onclick="openSignInModal()">Sign In</button></li>
         <li><button id="logoutBtn" style="display:none;">Log Out</button></li>
@@ -24,23 +24,15 @@
     </nav>
   </header>
 
-  <section class="hero">
-    <div class="hero-content">
-      <h2>Welcome to Jennix</h2>
-      <p>Your ultimate place for everything about Jenna Ortega!</p>
-      <button class="cta-button" onclick="joinCommunity()">Join the Community</button>
-    </div>
-  </section>
-
-  <!-- Forum -->
+  <!-- Forum Section -->
   <section id="forumSection" style="display:none; padding: 20px;">
     <h2>Community Forum</h2>
-    <textarea id="postText" placeholder="Share something about Jenna..." rows="4" cols="50"></textarea>
+    <textarea id="postText" placeholder="Share something about Jenna..."></textarea>
     <button id="postBtn">Post</button>
     <div id="posts" style="margin-top: 20px;"></div>
   </section>
 
-  <!-- Modal voor Sign In -->
+  <!-- Sign In Modal -->
   <div id="signInModal" class="modal">
     <div class="modal-content">
       <span class="close-button" onclick="closeSignInModal()">&times;</span>
@@ -54,7 +46,7 @@
     </div>
   </div>
 
-  <!-- Modal voor Sign Up -->
+  <!-- Sign Up Modal -->
   <div id="signUpModal" class="modal">
     <div class="modal-content">
       <span class="close-button" onclick="closeSignUpModal()">&times;</span>
@@ -75,9 +67,10 @@
   <!-- Firebase + App Logic -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-app.js";
-    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-auth.js";
+    import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-auth.js";
     import { getFirestore, collection, addDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-firestore.js";
 
+    // Firebase configuration
     const firebaseConfig = {
       apiKey: "AIzaSyDsb7m4EijaU3NNxwoos8y6egI29nfbChk",
       authDomain: "jennix-777e1.firebaseapp.com",
@@ -88,11 +81,12 @@
       measurementId: "G-HKJ85NVGF4"
     };
 
+    // Initialize Firebase
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    const signUpForm = document.getElementById("signUpForm");
+    // DOM elements
     const signInForm = document.getElementById("signInForm");
     const logoutBtn = document.getElementById("logoutBtn");
     const forumSection = document.getElementById("forumSection");
@@ -100,15 +94,7 @@
     const postText = document.getElementById("postText");
     const postsDiv = document.getElementById("posts");
 
-    signUpForm.onsubmit = (e) => {
-      e.preventDefault();
-      const email = document.getElementById("signUpEmail").value;
-      const password = document.getElementById("signUpPassword").value;
-      createUserWithEmailAndPassword(auth, email, password)
-        .then(closeSignUpModal)
-        .catch(err => alert(err.message));
-    };
-
+    // Sign In Logic
     signInForm.onsubmit = (e) => {
       e.preventDefault();
       const email = document.getElementById("signInEmail").value;
@@ -118,10 +104,12 @@
         .catch(err => alert(err.message));
     };
 
+    // Sign Out Logic
     logoutBtn.onclick = () => {
       signOut(auth);
     };
 
+    // Firebase Authentication state observer
     onAuthStateChanged(auth, user => {
       if (user) {
         forumSection.style.display = "block";
@@ -132,16 +120,18 @@
       }
     });
 
+    // Posting Logic
     postBtn.onclick = async () => {
       if (postText.value.trim() !== "") {
         await addDoc(collection(db, "posts"), {
           text: postText.value,
           timestamp: new Date()
         });
-        postText.value = "";
+        postText.value = ""; // Clear the textarea
       }
     };
 
+    // Realtime posts display
     const q = query(collection(db, "posts"), orderBy("timestamp", "desc"));
     onSnapshot(q, snapshot => {
       postsDiv.innerHTML = "";
@@ -152,7 +142,7 @@
       });
     });
 
-    // Modal switching logic
+    // Modal toggling functions
     window.openSignInModal = () => {
       document.getElementById("signInModal").style.display = "block";
     };
@@ -174,7 +164,5 @@
       openSignInModal();
     };
   </script>
-
-  <script src="main.js"></script>
 </body>
 </html>
