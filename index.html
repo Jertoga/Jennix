@@ -18,8 +18,7 @@
         <li><a href="gallery.html">Gallery</a></li>
         <li><a href="forum.html">Forum</a></li>
         <li><a href="about.html">About</a></li>
-        <li><button class="sign-in-button" onclick="openSignInModal()">Sign In</button></li>
-        <li><button id="logoutBtn" style="display:none;">Log Out</button></li>
+        <li><button id="authButton" onclick="handleAuthButtonClick()">Sign In</button></li>
       </ul>
     </nav>
   </header>
@@ -86,7 +85,7 @@
 
     const signUpForm = document.getElementById("signUpForm");
     const signInForm = document.getElementById("signInForm");
-    const logoutBtn = document.getElementById("logoutBtn");
+    const authButton = document.getElementById("authButton");
 
     signUpForm.onsubmit = (e) => {
       e.preventDefault();
@@ -106,15 +105,19 @@
         .catch(err => alert(err.message));
     };
 
-    logoutBtn.onclick = () => {
-      signOut(auth);
-    };
+    function handleAuthButtonClick() {
+      if (auth.currentUser) {
+        signOut(auth);
+      } else {
+        openSignInModal();
+      }
+    }
 
     onAuthStateChanged(auth, user => {
       if (user) {
-        logoutBtn.style.display = "inline";
+        authButton.textContent = "Log Out";
       } else {
-        logoutBtn.style.display = "none";
+        authButton.textContent = "Sign In";
       }
     });
 
