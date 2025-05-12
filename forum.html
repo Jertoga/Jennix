@@ -1,5 +1,3 @@
-<!-- forum.html -->
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Forum | Jennix</title>
     <link rel="stylesheet" href="style.css">
-    <script type="module" src="firebase.js"></script> <!-- Voeg dit toe -->
+    <script type="module" src="firebase.js"></script>
 </head>
 
 <body>
@@ -23,6 +21,7 @@
                 <li><a href="gallery.html">Gallery</a></li>
                 <li><a href="forum.html" class="active">Forum</a></li>
                 <li><a href="about.html">About</a></li>
+                <li><button class="sign-in-button" onclick="openSignInModal()">Sign In</button></li>
             </ul>
         </nav>
     </header>
@@ -31,13 +30,43 @@
         <h2>Community Forum</h2>
         <p>Join discussions with other Jenna Ortega fans!</p>
 
-        <input type="text" id="postInput" placeholder="Share your thoughts..." />
-        <button onclick="submitPost()">Post</button>
+        <div class="forum-post-area">
+            <input type="text" id="postInput" placeholder="Share your thoughts..." />
+            <button onclick="submitPost()">Post</button>
+        </div>
 
         <div id="posts">
             <!-- Berichten worden hier weergegeven -->
         </div>
     </main>
+
+    <!-- Modal voor Sign In -->
+    <div id="signInModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeSignInModal()">&times;</span>
+            <h3>Sign In to Jennix</h3>
+            <form id="signInForm">
+                <input type="email" id="signInEmail" placeholder="Enter your email" required />
+                <input type="password" id="signInPassword" placeholder="Enter your password" required />
+                <button type="submit">Sign In</button>
+            </form>
+            <p class="switch-text">Don't have an account? <a href="#" onclick="switchToSignUp()">Sign Up</a></p>
+        </div>
+    </div>
+
+    <!-- Modal voor Sign Up -->
+    <div id="signUpModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeSignUpModal()">&times;</span>
+            <h3>Create a Jennix Account</h3>
+            <form id="signUpForm">
+                <input type="email" id="signUpEmail" placeholder="Enter your email" required />
+                <input type="password" id="signUpPassword" placeholder="Choose a password" required />
+                <button type="submit">Sign Up</button>
+            </form>
+            <p class="switch-text">Already have an account? <a href="#" onclick="switchToSignIn()">Sign In</a></p>
+        </div>
+    </div>
 
     <footer>
         <p>&copy; 2025 Jennix. All rights reserved.</p>
@@ -51,11 +80,39 @@
             const postContent = postInput.value;
 
             if (postContent) {
-                // Hier kun je code toevoegen om het bericht naar Firebase te sturen
+                // Firebase code toevoegen hier
                 console.log("Post Submitted: ", postContent);
+                // Reset veld
+                postInput.value = "";
             } else {
                 alert("Please write something before posting.");
             }
+        }
+
+        function openSignInModal() {
+            document.getElementById('signInModal').style.display = 'block';
+        }
+
+        function closeSignInModal() {
+            document.getElementById('signInModal').style.display = 'none';
+        }
+
+        function openSignUpModal() {
+            document.getElementById('signUpModal').style.display = 'block';
+        }
+
+        function closeSignUpModal() {
+            document.getElementById('signUpModal').style.display = 'none';
+        }
+
+        function switchToSignUp() {
+            closeSignInModal();
+            openSignUpModal();
+        }
+
+        function switchToSignIn() {
+            closeSignUpModal();
+            openSignInModal();
         }
     </script>
 </body>
