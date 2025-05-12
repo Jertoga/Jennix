@@ -1,261 +1,82 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Jennix | Jenna Ortega Fan Site</title>
-    <link rel="stylesheet" href="style.css" />
-    <style>
-        /* Stijlen voor de sign-in/log-out knoppen (kun je aanpassen in style.css) */
-        .sign-in-button {
-            transition: opacity 0.3s ease;
-        }
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-auth.js";
 
-        .sign-in-button.hidden {
-            opacity: 0;
-            pointer-events: none;
-        }
+    const firebaseConfig = {
+        apiKey: "AIzaSyDsb7m4EijaU3NNxwoos8y6egI29nfbChk",
+        authDomain: "jennix-777e1.firebaseapp.com",
+        projectId: "jennix-777e1",
+        storageBucket: "jennix-777e1.appspot.com",
+        messagingSenderId: "673075142639",
+        appId: "1:673075142639:web:ea93e3ae1b244463ca201a",
+        measurementId: "G-HKJ85NVGF4"
+    };
 
-        #logoutBtn {
-            display: none; /* Start verborgen */
-            background-color: transparent;
-            color: #f7a800;
-            border: 1px solid #f7a800;
-            padding: 8px 15px;
-            border-radius: 4px;
-            transition: background-color 0.3s ease, color 0.3s ease;
-            cursor: pointer;
-        }
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
 
-        #logoutBtn:hover {
-            background-color: #f7a800;
-            color: #121212;
-        }
+    const signUpForm = document.getElementById("signUpForm");
+    const signInForm = document.getElementById("signInForm");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const authButton = document.getElementById("authButton");
 
-        /* Stijlen voor de modals (kun je aanpassen in style.css) */
-        .modal {
-            display: none; /* Hidden by default */
-            position: fixed; /* Stay in place */
-            z-index: 1; /* Sit on top */
-            left: 0;
-            top: 0;
-            width: 100%; /* Full width */
-            height: 100%; /* Full height */
-            overflow: auto; /* Enable scroll if needed */
-            background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
-        }
-
-        .modal-content {
-            background-color: #fefefe;
-            margin: 15% auto; /* 15% from the top and centered */
-            padding: 20px;
-            border: 1px solid #888;
-            width: 80%; /* Could be more or less, depending on screen size */
-        }
-
-        .close-button {
-            color: #aaa;
-            float: right;
-            font-size: 28px;
-            font-weight: bold;
-        }
-
-        .close-button:hover,
-        .close-button:focus {
-            color: black;
-            text-decoration: none;
-            cursor: pointer;
-        }
-
-        #signInForm input[type=email],
-        #signInForm input[type=password],
-        #signUpForm input[type=email],
-        #signUpForm input[type=password] {
-            width: 100%;
-            padding: 12px 20px;
-            margin-bottom: 10px;
-            display: inline-block;
-            border: 1px solid #ccc;
-            box-sizing: border-box;
-        }
-
-        #signInForm button,
-        #signUpForm button {
-            background-color: #5cb85c;
-            color: white;
-            padding: 14px 20px;
-            border: none;
-            cursor: pointer;
-            width: 100%;
-        }
-
-        #signInForm button:hover,
-        #signUpForm button:hover {
-            opacity: 0.8;
-        }
-
-        .switch-text {
-            text-align: center;
-            margin-top: 10px;
-        }
-
-        .switch-text a {
-            color: #007bff;
-            text-decoration: none;
-        }
-
-        .switch-text a:hover {
-            text-decoration: underline;
-        }
-    </style>
-</head>
-<body>
-    <header>
-        <div class="logo">
-            <h1>Jennix</h1>
-        </div>
-        <nav>
-            <ul>
-                <li><a href="index.html" class="active">Home</a></li>
-                <li><a href="news.html">News</a></li>
-                <li><a href="gallery.html">Gallery</a></li>
-                <li><a href="forum.html">Forum</a></li>
-                <li><a href="about.html">About</a></li>
-                <li>
-                    <button id="authButton" class="sign-in-button" onclick="openSignInModal()">Sign In</button>
-                    <button id="logoutBtn">Log Out</button>
-                </li>
-            </ul>
-        </nav>
-    </header>
-
-    <section class="hero">
-        <div class="hero-content">
-            <h2>Welcome to Jennix</h2>
-            <p>Your ultimate place for everything about Jenna Ortega!</p>
-            <button class="cta-button" onclick="joinCommunity()">Join the Community</button>
-        </div>
-    </section>
-
-    <div id="signInModal" class="modal">
-        <div class="modal-content">
-            <span class="close-button" onclick="closeSignInModal()">&times;</span>
-            <h3>Sign In to Jennix</h3>
-            <form id="signInForm">
-                <label for="signInEmail">Email</label>
-                <input type="email" id="signInEmail" placeholder="Enter your email" required />
-                <label for="signInPassword">Password</label>
-                <input type="password" id="signInPassword" placeholder="Enter your password" required />
-                <button type="submit">Sign In</button>
-            </form>
-            <p class="switch-text">Don't have an account? <a href="#" onclick="switchToSignUp()">Sign Up</a></p>
-        </div>
-    </div>
-
-    <div id="signUpModal" class="modal">
-        <div class="modal-content">
-            <span class="close-button" onclick="closeSignUpModal()">&times;</span>
-            <h3>Create a Jennix Account</h3>
-            <form id="signUpForm">
-                <label for="signUpEmail">Email</label>
-                <input type="email" id="signUpEmail" placeholder="Enter your email" required />
-                <label for="signUpPassword">Password</label>
-                <input type="password" id="signUpPassword" placeholder="Choose a password" required />
-                <button type="submit">Sign Up</button>
-            </form>
-            <p class="switch-text">Already have an account? <a href="#" onclick="switchToSignIn()">Sign In</a></p>
-        </div>
-    </div>
-
-    <footer>
-        <p>&copy; 2025 Jennix. All rights reserved.</p>
-    </footer>
-
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-app.js";
-        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, setDoc, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-firestore.js";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyDsb7m4EijaU3NNxwoos8y6egI29nfbChk",
-            authDomain: "jennix-777e1.firebaseapp.com",
-            projectId: "jennix-777e1",
-            storageBucket: "jennix-777e1.appspot.com",
-            messagingSenderId: "673075142639",
-            appId: "1:673075142639:web:ea93e3ae1b244463ca201a",
-            measurementId: "G-HKJ85NVGF4"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-
-        const signUpForm = document.getElementById("signUpForm");
-        const signInForm = document.getElementById("signInForm");
-        const logoutBtn = document.getElementById("logoutBtn");
-        const authButton = document.getElementById("authButton");
-
-        signUpForm.onsubmit = async (e) => {
-            e.preventDefault();
-            const email = document.getElementById("signUpEmail").value;
-            const password = document.getElementById("signUpPassword").value;
-            try {
-                await createUserWithEmailAndPassword(auth, email, password);
-                closeSignUpModal();
-            } catch (err) {
-                alert(err.message);
-            }
-        };
-
-        signInForm.onsubmit = async (e) => {
-            e.preventDefault();
-            const email = document.getElementById("signInEmail").value;
-            const password = document.getElementById("signInPassword").value;
-            try {
-                await signInWithEmailAndPassword(auth, email, password);
-                closeSignInModal();
-            } catch (err) {
-                alert(err.message);
-            }
-        };
-
-        logoutBtn.onclick = () => {
-            signOut(auth);
-        };
-
-        onAuthStateChanged(auth, user => {
-            if (user) {
-                logoutBtn.style.display = "inline-block";
-                authButton.style.display = "none";
-            } else {
-                logoutBtn.style.display = "none";
-                authButton.style.display = "inline-block";
-            }
-        });
-
-        // Modal switching logic
-        window.openSignInModal = () => {
-            document.getElementById("signInModal").style.display = "block";
-        };
-        window.closeSignInModal = () => {
-            document.getElementById("signInModal").style.display = "none";
-        };
-        window.openSignUpModal = () => {
-            document.getElementById("signUpModal").style.display = "block";
-        };
-        window.closeSignUpModal = () => {
-            document.getElementById("signUpModal").style.display = "none";
-        };
-        window.switchToSignUp = () => {
-            closeSignInModal();
-            openSignUpModal();
-        };
-        window.switchToSignIn = () => {
+    signUpForm.onsubmit = async (e) => {
+        e.preventDefault();
+        const email = document.getElementById("signUpEmail").value;
+        const password = document.getElementById("signUpPassword").value;
+        try {
+            await createUserWithEmailAndPassword(auth, email, password);
             closeSignUpModal();
-            openSignInModal();
-        };
-    </script>
+        } catch (err) {
+            alert(err.message);
+        }
+    };
 
-    <script src="main.js"></script>
-</body>
-</html>
+    signInForm.onsubmit = async (e) => {
+        e.preventDefault();
+        const email = document.getElementById("signInEmail").value;
+        const password = document.getElementById("signInPassword").value;
+        try {
+            await signInWithEmailAndPassword(auth, email, password);
+            closeSignInModal();
+        } catch (err) {
+            alert(err.message);
+        }
+    };
+
+    logoutBtn.onclick = () => {
+        signOut(auth);
+    };
+
+    onAuthStateChanged(auth, user => {
+        if (user) {
+            logoutBtn.style.display = "inline-block";
+            authButton.style.display = "none";
+        } else {
+            logoutBtn.style.display = "none";
+            authButton.style.display = "inline-block";
+        }
+    });
+
+    // Modal switching logic
+    window.openSignInModal = () => {
+        document.getElementById("signInModal").style.display = "block";
+    };
+    window.closeSignInModal = () => {
+        document.getElementById("signInModal").style.display = "none";
+    };
+    window.openSignUpModal = () => {
+        document.getElementById("signUpModal").style.display = "block";
+    };
+    window.closeSignUpModal = () => {
+        document.getElementById("signUpModal").style.display = "none";
+    };
+    window.switchToSignUp = () => {
+        closeSignInModal();
+        openSignUpModal();
+    };
+    window.switchToSignIn = () => {
+        closeSignUpModal();
+        openSignInModal();
+    };
+</script>
