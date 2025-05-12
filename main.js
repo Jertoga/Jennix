@@ -1,6 +1,12 @@
 // Firebase importeren (bovenaan)
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-auth.js";
+import {
+    getAuth,
+    signInWithEmailAndPassword,
+    createUserWithEmailAndPassword,
+    onAuthStateChanged,
+    signOut
+} from "https://www.gstatic.com/firebasejs/11.7.1/firebase-auth.js";
 
 // Firebase configuratie
 const firebaseConfig = {
@@ -90,13 +96,20 @@ function updateUI(user) {
     const nav = document.querySelector("nav ul");
     const signInBtn = document.querySelector(".sign-in-button");
 
-    if (user) {
-        signInBtn.style.display = "none";
+    // Check of al een logout knop bestaat
+    if (!document.getElementById("logoutBtn")) {
+        // Verander tekst van de knop naar "Dashboard"
+        signInBtn.innerText = "Dashboard";
+        signInBtn.onclick = () => {
+            // Verwijs door naar dashboard als je dat hebt
+            window.location.href = "/dashboard.html"; // Pas dit pad aan als nodig
+        };
 
-        const li = document.createElement("li");
-        li.id = "logoutBtn";
-        li.innerHTML = `<button onclick="logout()" class="sign-in-button">Log Out</button>`;
-        nav.appendChild(li);
+        // Voeg log out knop toe
+        const logoutLi = document.createElement("li");
+        logoutLi.id = "logoutBtn";
+        logoutLi.innerHTML = `<button onclick="logout()" class="sign-in-button">Log Out</button>`;
+        nav.appendChild(logoutLi);
     }
 }
 
@@ -112,5 +125,9 @@ function logout() {
 onAuthStateChanged(auth, (user) => {
     if (user) {
         updateUI(user);
+
+        // Optional: console log email en tijd als je dat ergens nodig hebt
+        const loginTime = new Date().toLocaleTimeString();
+        console.log("Ingelogd als:", user.email, "om", loginTime);
     }
 });
