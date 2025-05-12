@@ -1,453 +1,78 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <title>Jennix | Forum</title>
-    <link rel="stylesheet" href="style.css" />
-    <style>
-        /* Additional Forum-Specific Styling */
-        #forumSection {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            height: 80vh;
-            overflow-x: hidden;
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-auth.js";
+    import { getFirestore } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyDsb7m4EijaU3NNxwoos8y6egI29nfbChk",
+        authDomain: "jennix-777e1.firebaseapp.com",
+        projectId: "jennix-777e1",
+        storageBucket: "jennix-777e1.appspot.com",
+        messagingSenderId: "673075142639",
+        appId: "1:673075142639:web:ea93e3ae1b244463ca201a",
+        measurementId: "G-HKJ85NVGF4"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const signUpForm = document.getElementById("signUpForm");
+    const signInForm = document.getElementById("signInForm");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const authButton = document.querySelector('.sign-in-button'); // Selecteer de Sign In knop op basis van de class
+
+    signUpForm.onsubmit = (e) => {
+        e.preventDefault();
+        const email = document.getElementById("signUpEmail").value;
+        const password = document.getElementById("signUpPassword").value;
+        createUserWithEmailAndPassword(auth, email, password)
+            .then(closeSignUpModal)
+            .catch(err => alert(err.message));
+    };
+
+    signInForm.onsubmit = (e) => {
+        e.preventDefault();
+        const email = document.getElementById("signInEmail").value;
+        const password = document.getElementById("signInPassword").value;
+        signInWithEmailAndPassword(auth, email, password)
+            .then(closeSignInModal)
+            .catch(err => alert(err.message));
+    };
+
+    logoutBtn.onclick = () => {
+        signOut(auth);
+    };
+
+    onAuthStateChanged(auth, user => {
+        if (user) {
+            logoutBtn.style.display = "inline-block";
+            authButton.style.display = "none";
+        } else {
+            logoutBtn.style.display = "none";
+            authButton.style.display = "inline-block";
         }
+    });
 
-        /* Vernieuwde structuur voor mobiele focus */
-        .forum-container {
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-        }
-
-        #posts {
-            background-color: transparent;
-            padding: 0;
-            flex-grow: 1;
-            overflow-y: auto;
-            overflow-x: hidden;
-            margin-bottom: 10px;
-            /* Minder padding voor beter aansluiten op input area */
-            padding-bottom: 15px;
-        }
-
-        .post-input-area {
-            position: sticky;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            width: 100%;
-            z-index: 100;
-            background-color: #181818;
-            padding: 15px;
-            border-top: 1px solid #333;
-            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
-            box-sizing: border-box;
-        }
-
-        #postText {
-            width: 100%;
-            background-color: #1e1e1e;
-            border: 1px solid #333;
-            color: #fff;
-            padding: 12px;
-            border-radius: 6px;
-            min-height: 80px;
-            resize: vertical;
-            margin-bottom: 15px;
-            transition: border-color 0.3s ease;
-            box-sizing: border-box;
-        }
-
-        #postText:focus {
-            outline: none;
-            border-color: #f7a800;
-        }
-
-        #postText:disabled {
-            background-color: #2a2a2a;
-            color: #666;
-            cursor: not-allowed;
-        }
-
-        #postBtn {
-            width: 100%;
-            margin-bottom: 0; /* Minder ruimte onderaan op mobiel */
-        }
-
-        #postBtn:disabled {
-            background-color: #666;
-            cursor: not-allowed;
-            opacity: 0.6;
-        }
-
-        .post {
-            background-color: #1e1e1e;
-            border-radius: 6px;
-            padding: 15px;
-            margin-bottom: 15px;
-            border: 1px solid #333;
-            transition: background-color 0.3s ease;
-            width: 100%;
-            box-sizing: border-box;
-        }
-
-        .post-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #333;
-        }
-
-        .post-header span:first-child {
-            font-weight: bold;
-            color: #f7a800;
-            margin-right: 10px;
-        }
-
-        .post-header span:last-child {
-            color: #888;
-            font-size: 0.8em;
-        }
-
-        .post-content {
-            color: #ddd;
-            line-height: 1.6;
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-            max-width: 100%;
-        }
-
-        #logoutBtn {
-            display: none;
-            background-color: transparent;
-            color: #f7a800;
-            border: 1px solid #f7a800;
-            padding: 8px 15px;
-            border-radius: 4px;
-            transition: background-color 0.3s ease, color 0.3s ease;
-        }
-
-        #logoutBtn:hover {
-            background-color: #f7a800;
-            color: #121212;
-        }
-
-        .sign-in-button {
-            transition: opacity 0.3s ease;
-        }
-
-        .sign-in-button.hidden {
-            opacity: 0;
-            pointer-events: none;
-        }
-
-        .date-divider {
-            text-align: center;
-            color: #888;
-            margin: 15px 0;
-            position: relative;
-            width: 100%;
-        }
-
-        .date-divider::before, .date-divider::after {
-            content: "";
-            position: absolute;
-            top: 50%;
-            width: 42%;
-            height: 1px;
-            background-color: #333;
-        }
-
-        .date-divider::before {
-            left: 0;
-        }
-
-        .date-divider::after {
-            right: 0;
-        }
-
-        @media (max-width: 600px) {
-            .post-header {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-
-            .post-header span:last-child {
-                margin-top: 5px;
-            }
-
-            #forumSection {
-                height: calc(100vh - 120px);
-                padding: 15px 10px;
-                overflow: hidden;
-                position: relative;
-            }
-
-            .forum-container {
-                height: 100%;
-                overflow: hidden;
-                position: relative;
-            }
-
-            #posts {
-                padding-bottom: 90px; /* Minder ruimte zodat berichten dichter bij input area staan */
-                height: 100%;
-                position: relative;
-            }
-
-            .post-input-area {
-                position: fixed;
-                bottom: 0;
-                left: 0;
-                right: 0;
-                max-width: 100%;
-                margin: 0 auto;
-                padding: 10px;
-                z-index: 999;
-                /* Achtergrond matchen met pagina */
-                background-color: #181818;
-                border-top: 1px solid #333;
-                /* Belangrijke viewport setting om boven keyboard te blijven */
-                transform: translateZ(0);
-            }
-
-            #postText {
-                min-height: 60px;
-                margin-bottom: 10px;
-            }
-
-            #postBtn {
-                margin-bottom: 5px;
-                height: 40px; /* Vastgestelde hoogte voor de knop */
-            }
-        }
-    </style>
-</head>
-<body>
-    <header>
-        <div class="logo">
-            <h1>Jennix</h1>
-        </div>
-        <nav>
-            <ul>
-                <li><a href="index.html">Home</a></li>
-                <li><a href="news.html">News</a></li>
-                <li><a href="gallery.html">Gallery</a></li>
-                <li><a href="forum.html" class="active">Forum</a></li>
-                <li><a href="about.html">About</a></li>
-                <li>
-                    <button class="sign-in-button" onclick="openSignInModal()">Sign In</button>
-                    <button id="logoutBtn">Log Out</button>
-                </li>
-            </ul>
-        </nav>
-    </header>
-
-    <main class="content">
-        <section id="forumSection">
-            <h2>Community Forum</h2>
-            <div class="forum-container">
-                <div id="posts"></div>
-                <div class="post-input-area">
-                    <textarea id="postText" placeholder="Sign in to post a comment..."></textarea>
-                    <button id="postBtn" class="cta-button" disabled>Post</button>
-                </div>
-            </div>
-        </section>
-    </main>
-
-    <div id="signInModal" class="modal">
-        <div class="modal-content">
-            <span class="close-btn" onclick="closeSignInModal()">×</span>
-            <h3>Sign In to Jennix</h3>
-            <form id="signInForm">
-                <label for="signInEmail">Email</label>
-                <input type="email" id="signInEmail" placeholder="Enter your email" required />
-                <label for="signInPassword">Password</label>
-                <input type="password" id="signInPassword" placeholder="Enter your password" required />
-                <button type="submit">Sign In</button>
-            </form>
-            <p class="switch-text">Don't have an account? <a href="#" onclick="switchToSignUp()">Sign Up</a></p>
-        </div>
-    </div>
-
-    <div id="signUpModal" class="modal">
-        <div class="modal-content">
-            <span class="close-btn" onclick="closeSignUpModal()">×</span>
-            <h3>Create a Jennix Account</h3>
-            <form id="signUpForm">
-                <label for="signUpUsername">Username</label>
-                <input type="text" id="signUpUsername" placeholder="Choose a username" required minlength="3" maxlength="20" />
-                <label for="signUpEmail">Email</label>
-                <input type="email" id="signUpEmail" placeholder="Enter your email" required />
-                <label for="signUpPassword">Password</label>
-                <input type="password" id="signUpPassword" placeholder="Choose a password" required minlength="6" />
-                <button type="submit">Sign Up</button>
-            </form>
-            <p class="switch-text">Already have an account? <a href="#" onclick="switchToSignIn()">Sign In</a></p>
-        </div>
-    </div>
-
-    <footer>
-        <p>© 2025 Jennix. All rights reserved.</p>
-    </footer>
-
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, setDoc, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-firestore.js";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyDsb7m4EijaU3NNxwoos8y6egI29nfbChk",
-            authDomain: "jennix-777e1.firebaseapp.com",
-            projectId: "jennix-777e1",
-            storageBucket: "jennix-777e1.appspot.com",
-            messagingSenderId: "673075142639",
-            appId: "1:673075142639:web:ea93e3ae1b244463ca201a",
-            measurementId: "G-HKJ85NVGF4"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-
-        const signInForm = document.getElementById("signInForm");
-        const signUpForm = document.getElementById("signUpForm");
-        const logoutBtn = document.getElementById("logoutBtn");
-        const authButton = document.getElementById("authButton");
-        const forumSection = document.getElementById("forumSection");
-        const postBtn = document.getElementById("postBtn");
-        const postText = document.getElementById("postText");
-        const postsDiv = document.getElementById("posts");
-
-        // Detecteer mobiele apparaten voor specifieke aanpassingen
-        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth <= 600;
-
-        // Aanpassing layout voor mobiel
-        function adjustLayoutForMobile() {
-            if (isMobile) {
-                // Zorg dat het postText veld op mobiel minder hoog is
-                postText.style.minHeight = "60px";
-
-                // Aanpassingen voor input area op mobiel
-                const postInputArea = document.querySelector('.post-input-area');
-                postInputArea.style.position = 'fixed';
-
-                // Direct viewport onderaan positioneren
-                window.scrollTo(0, 1);
-
-                // Viewport hack om te zorgen dat alles goed zichtbaar blijft
-                document.body.style.height = window.innerHeight + 'px';
-
-                // Force positionering onder de content maar boven toetsenbord
-                postInputArea.style.bottom = '0';
-
-                // Pas de marginBottom aan van posts bij inladen
-                postsDiv.style.paddingBottom = "90px";
-            }
-        }
-
-        // Roep direct aan bij laden
-        adjustLayoutForMobile();
-
-        // Ook aanroepen bij resize en orientatieverandering
-        window.addEventListener('resize', adjustLayoutForMobile);
-        window.addEventListener('orientationchange', adjustLayoutForMobile);
-
-        // Sign In
-        signInForm.onsubmit = async (e) => {
-            e.preventDefault();
-            const email = document.getElementById("signInEmail").value;
-            const password = document.getElementById("signInPassword").value;
-
-            try {
-                await signInWithEmailAndPassword(auth, email, password);
-                closeSignInModal();
-            } catch (err) {
-                alert("Error: " + err.message);
-            }
-        };
-
-        // Sign Up
-        signUpForm.onsubmit = async (e) => {
-            e.preventDefault();
-            const username = document.getElementById("signUpUsername").value.trim();
-            const email = document.getElementById("signUpEmail").value;
-            const password = document.getElementById("signUpPassword").value;
-
-            if (username.length < 3 || username.length > 20) {
-                alert("Username must be between 3 and 20 characters.");
-                return;
-            }
-
-            try {
-                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                const user = userCredential.user;
-                await setDoc(doc(db, "users", user.uid), {
-                    username: username,
-                    email: email
-                });
-                alert("Account created!");
-                closeSignUpModal();
-            } catch (err) {
-                alert("Error: " + err.message);
-            }
-        };
-
-        // Log out
-        logoutBtn.onclick = () => {
-            signOut(auth);
-        };
-
-        // Auth state observer
-        let currentUser = null;
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                const userDoc = await getDoc(doc(db, "users", user.uid));
-                currentUser = {
-                    ...user,
-                    username: userDoc.data().username
-                };
-                logoutBtn.style.display = "inline-block";
-                authButton.classList.add('hidden');
-                postText.disabled = false;
-                postText.placeholder = "Share something about Jenna...";
-                postBtn.disabled = false;
-            } else {
-                currentUser = null;
-                logoutBtn.style.display = "none";
-                authButton.classList.remove('hidden');
-                postText.disabled = true;
-                postText.placeholder = "Sign in to post a comment...";
-                postBtn.disabled = true;
-            }
-            forumSection.style.display = "block";
-        });
-
-        // Post - met verbeterde focus handling
-        postBtn.onclick = async () => {
-            if (currentUser && postText.value.trim() !== "") {
-                try {
-                    // Bewaar de focus status
-                    const hadFocus = document.activeElement === postText;
-
-                    // Post naar Firebase
-                    await addDoc(collection(db, "posts"), {
-                        text: postText.value,
-                        username: currentUser.username,
-                        email: currentUser.email,
-                        timestamp: new Date()
-                    });
-
-                    // Leeg het tekstveld
-                    postText.value = "";
-
-                    // BELANGRI
+    // Modal switching logic
+    window.openSignInModal = () => {
+        document.getElementById("signInModal").style.display = "block";
+    };
+    window.closeSignInModal = () => {
+        document.getElementById("signInModal").style.display = "none";
+    };
+    window.openSignUpModal = () => {
+        document.getElementById("signUpModal").style.display = "block";
+    };
+    window.closeSignUpModal = () => {
+        document.getElementById("signUpModal").style.display = "none";
+    };
+    window.switchToSignUp = () => {
+        closeSignInModal();
+        openSignUpModal();
+    };
+    window.switchToSignIn = () => {
+        closeSignUpModal();
+        openSignInModal();
+    };
+</script>
