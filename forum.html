@@ -1,630 +1,234 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <title>Jennix | Forum</title>
-    <link rel="stylesheet" href="style.css" />
-    <style>
-        /* Additional Forum-Specific Styling */
-        #forumSection {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            height: 80vh;
-            overflow-x: hidden;
+// Import Firebase modules
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-auth.js";
+import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove, where, getDocs, increment } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-firestore.js";
+import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-storage.js";
+
+// Firebase config
+const firebaseConfig = {
+    apiKey: "AIzaSyDsb7m4EijaU3NNxwoos8y6egI29nfbChk",
+    authDomain: "jennix-777e1.firebaseapp.com",
+    projectId: "jennix-777e1",
+    storageBucket: "jennix-777e1.appspot.com",
+    messagingSenderId: "673075142639",
+    appId: "1:673075142639:web:ea93e3ae1b244463ca201a",
+    measurementId: "G-HKJ85NVGF4"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const storage = getStorage(app);
+
+// DOM Elements
+const uploadForm = document.getElementById('uploadForm');
+const fileInput = document.getElementById('fileInput');
+const fileNameDisplay = document.getElementById('fileNameDisplay');
+const imagePreview = document.getElementById('imagePreview');
+const videoPreview = document.getElementById('videoPreview');
+const captionText = document.getElementById('captionText');
+const uploadBtn = document.getElementById('uploadBtn');
+const galleryGrid = document.getElementById('galleryGrid');
+const loadingSpinner = document.getElementById('loadingSpinner');
+const noContentMessage = document.getElementById('noContentMessage');
+const logoutBtn = document.getElementById('logoutBtn');
+const authButton = document.getElementById('authButton');
+
+// Global state
+let currentUser = null;
+
+// Detecteer mobiele apparaten
+const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth <= 600;
+
+// Mobiele aanpassingen
+function adjustLayoutForMobile() {
+    if (isMobile) {
+        captionText.style.minHeight = '60px';
+        document.body.style.height = window.innerHeight + 'px';
+        window.scrollTo(0, 1);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', adjustLayoutForMobile);
+window.addEventListener('resize', adjustLayoutForMobile);
+window.addEventListener('orientationchange', adjustLayoutForMobile);
+
+// Auth state observer
+onAuthStateChanged(auth, async (user) => {
+    if (user) {
+        try {
+            const userDoc = await getDoc(doc(db, "users", user.uid));
+            currentUser = {
+                uid: user.uid,
+                email: user.email,
+                username: userDoc.exists() ? userDoc.data().username : "User"
+            };
+            
+            captionText.disabled = false;
+            uploadBtn.disabled = false;
+            uploadBtn.setAttribute('aria-disabled', 'false');
+            logoutBtn.style.display = "inline-block";
+            authButton.classList.add('hidden');
+        } catch (error) {
+            console.error("Error getting user data:", error);
+            alert("Error loading user data: " + error.message);
         }
+    } else {
+        currentUser = null;
+        captionText.disabled = true;
+        uploadBtn.disabled = true;
+        uploadBtn.setAttribute('aria-disabled', 'true');
+        logoutBtn.style.display = "none";
+        authButton.classList.remove('hidden');
+    }
+    loadGalleryContent(); // Laad gallery ongeacht auth status
+});
 
-        /* Vernieuwde structuur voor mobiele focus */
-        .forum-container {
-            display: flex;
-            flex-direction: column;
-            height: 100%;
+// File input change handler
+fileInput.addEventListener('change', () => {
+    const file = fileInput.files[0];
+    
+    if (file) {
+        // Valideer bestandstype
+        if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
+            alert("Please select an image or video file.");
+            fileInput.value = '';
+            return;
         }
-
-        #posts {
-            background-color: transparent;
-            padding: 0;
-            flex-grow: 1;
-            overflow-y: auto;
-            overflow-x: hidden;
-            margin-bottom: 10px;
-            /* Minder padding voor beter aansluiten op input area */
-            padding-bottom: 15px;
-        }
-
-        .post-input-area {
-            position: sticky;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            width: 100%;
-            z-index: 100;
-            background-color: #181818;
-            padding: 15px;
-            border-top: 1px solid #333;
-            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
-            box-sizing: border-box;
-        }
-
-        #postText {
-            width: 100%;
-            background-color: #1e1e1e;
-            border: 1px solid #333;
-            color: #fff;
-            padding: 12px;
-            border-radius: 6px;
-            min-height: 80px;
-            resize: vertical;
-            margin-bottom: 15px;
-            transition: border-color 0.3s ease;
-            box-sizing: border-box;
-        }
-
-        #postText:focus {
-            outline: none;
-            border-color: #f7a800;
-        }
-
-        #postText:disabled {
-            background-color: #2a2a2a;
-            color: #666;
-            cursor: not-allowed;
-        }
-
-        #postBtn {
-            width: 100%;
-            margin-bottom: 0; /* Minder ruimte onderaan op mobiel */
-        }
-
-        #postBtn:disabled {
-            background-color: #666;
-            cursor: not-allowed;
-            opacity: 0.6;
-        }
-
-        .post {
-            background-color: #1e1e1e;
-            border-radius: 6px;
-            padding: 15px;
-            margin-bottom: 15px;
-            border: 1px solid #333;
-            transition: background-color 0.3s ease;
-            width: 100%;
-            box-sizing: border-box;
-        }
-
-        .post-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #333;
-        }
-
-        .post-header span:first-child {
-            font-weight: bold;
-            color: #f7a800;
-            margin-right: 10px;
-        }
-
-        .post-header span:last-child {
-            color: #888;
-            font-size: 0.8em;
-        }
-
-        .post-content {
-            color: #ddd;
-            line-height: 1.6;
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-            max-width: 100%;
-        }
-
-        #logoutBtn {
-            display: none;
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background-color: transparent;
-            color: #f7a800;
-            border: 1px solid #f7a800;
-            padding: 8px 15px;
-            border-radius: 4px;
-            transition: background-color 0.3s ease, color 0.3s ease;
-        }
-
-        #logoutBtn:hover {
-            background-color: #f7a800;
-            color: #121212;
-        }
-
-        .sign-in-button {
-            transition: opacity 0.3s ease;
-        }
-
-        .sign-in-button.hidden {
-            opacity: 0;
-            pointer-events: none;
-        }
-
-        .date-divider {
-            text-align: center;
-            color: #888;
-            margin: 15px 0;
-            position: relative;
-            width: 100%;
-        }
-
-        .date-divider::before, .date-divider::after {
-            content: "";
-            position: absolute;
-            top: 50%;
-            width: 42%;
-            height: 1px;
-            background-color: #333;
-        }
-
-        .date-divider::before {
-            left: 0;
-        }
-
-        .date-divider::after {
-            right: 0;
-        }
-
-        @media (max-width: 600px) {
-            .post-header {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-
-            .post-header span:last-child {
-                margin-top: 5px;
-            }
-
-            #forumSection {
-                height: calc(100vh - 120px);
-                padding: 15px 10px;
-                overflow: hidden;
-                position: relative;
-            }
-
-            .forum-container {
-                height: 100%;
-                overflow: hidden;
-                position: relative;
-            }
-
-            #posts {
-                padding-bottom: 90px; /* Minder ruimte zodat berichten dichter bij input area staan */
-                height: 100%;
-                position: relative;
-            }
-
-            .post-input-area {
-                position: fixed;
-                bottom: 0;
-                left: 0;
-                right: 0;
-                max-width: 100%;
-                margin: 0 auto;
-                padding: 10px;
-                z-index: 999;
-                /* Achtergrond matchen met pagina */
-                background-color: #181818;
-                border-top: 1px solid #333;
-                /* Belangrijke viewport setting om boven keyboard te blijven */
-                transform: translateZ(0);
-            }
-
-            #postText {
-                min-height: 60px;
-                margin-bottom: 10px;
-            }
-
-            #postBtn {
-                margin-bottom: 5px;
-                height: 40px; /* Vastgestelde hoogte voor de knop */
-            }
-        }
-    </style>
-</head>
-<body>
-    <header>
-        <div class="logo">
-            <h1>Jennix</h1>
-        </div>
-        <nav>
-            <ul>
-                <li><a href="index.html">Home</a></li>
-                <li><a href="news.html">News</a></li>
-                <li><a href="gallery.html">Gallery</a></li>
-                <li><a href="forum.html" class="active">Forum</a></li>
-                <li><a href="about.html">About</a></li>
-                <li>
-                    <button id="authButton" class="sign-in-button" onclick="openSignInModal()">Sign In</button>
-                    <button id="logoutBtn">Log Out</button>
-                </li>
-            </ul>
-        </nav>
-    </header>
-
-    <main class="content">
-        <!-- Geherstructureerde Forum Section -->
-        <section id="forumSection">
-            <h2>Community Forum</h2>
-            <div class="forum-container">
-                <div id="posts"></div>
-                <div class="post-input-area">
-                    <textarea id="postText" placeholder="Sign in to post a comment..."></textarea>
-                    <button id="postBtn" class="cta-button" disabled>Post</button>
-                </div>
-            </div>
-        </section>
-    </main>
-
-    <!-- Sign In Modal -->
-    <div id="signInModal" class="modal">
-        <div class="modal-content">
-            <span class="close-btn" onclick="closeSignInModal()">×</span>
-            <h3>Sign In to Jennix</h3>
-            <form id="signInForm">
-                <label for="signInEmail">Email</label>
-                <input type="email" id="signInEmail" placeholder="Enter your email" required />
-                <label for="signInPassword">Password</label>
-                <input type="password" id="signInPassword" placeholder="Enter your password" required />
-                <button type="submit">Sign In</button>
-            </form>
-            <p class="switch-text">Don't have an account? <a href="#" onclick="switchToSignUp()">Sign Up</a></p>
-        </div>
-    </div>
-
-    <!-- Sign Up Modal -->
-    <div id="signUpModal" class="modal">
-        <div class="modal-content">
-            <span class="close-btn" onclick="closeSignUpModal()">×</span>
-            <h3>Create a Jennix Account</h3>
-            <form id="signUpForm">
-                <label for="signUpUsername">Username</label>
-                <input type="text" id="signUpUsername" placeholder="Choose a username" required minlength="3" maxlength="20" />
-                <label for="signUpEmail">Email</label>
-                <input type="email" id="signUpEmail" placeholder="Enter your email" required />
-                <label for="signUpPassword">Password</label>
-                <input type="password" id="signUpPassword" placeholder="Choose a password" required minlength="6" />
-                <button type="submit">Sign Up</button>
-            </form>
-            <p class="switch-text">Already have an account? <a href="#" onclick="switchToSignIn()">Sign In</a></p>
-        </div>
-    </div>
-
-    <footer>
-        <p>© 2025 Jennix. All rights reserved.</p>
-    </footer>
-
-    <!-- Firebase + App Logic -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, setDoc, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-firestore.js";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyDsb7m4EijaU3NNxwoos8y6egI29nfbChk",
-            authDomain: "jennix-777e1.firebaseapp.com",
-            projectId: "jennix-777e1",
-            storageBucket: "jennix-777e1.appspot.com",
-            messagingSenderId: "673075142639",
-            appId: "1:673075142639:web:ea93e3ae1b244463ca201a",
-            measurementId: "G-HKJ85NVGF4"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-
-        const signInForm = document.getElementById("signInForm");
-        const signUpForm = document.getElementById("signUpForm");
-        const logoutBtn = document.getElementById("logoutBtn");
-        const authButton = document.getElementById("authButton");
-        const forumSection = document.getElementById("forumSection");
-        const postBtn = document.getElementById("postBtn");
-        const postText = document.getElementById("postText");
-        const postsDiv = document.getElementById("posts");
-
-        // Detecteer mobiele apparaten voor specifieke aanpassingen
-        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth <= 600;
-
-        // Aanpassing layout voor mobiel
-        function adjustLayoutForMobile() {
-            if (isMobile) {
-                // Zorg dat het postText veld op mobiel minder hoog is
-                postText.style.minHeight = "60px";
-                
-                // Aanpassingen voor input area op mobiel
-                const postInputArea = document.querySelector('.post-input-area');
-                postInputArea.style.position = 'fixed';
-                
-                // Direct viewport onderaan positioneren
-                window.scrollTo(0, 1);
-                
-                // Viewport hack om te zorgen dat alles goed zichtbaar blijft
-                document.body.style.height = window.innerHeight + 'px';
-                
-                // Force positionering onder de content maar boven toetsenbord
-                postInputArea.style.bottom = '0';
-                
-                // Pas de marginBottom aan van posts bij inladen
-                postsDiv.style.paddingBottom = "90px";
-            }
-        }
-
-        // Roep direct aan bij laden
-        adjustLayoutForMobile();
         
-        // Ook aanroepen bij resize en orientatieverandering
-        window.addEventListener('resize', adjustLayoutForMobile);
-        window.addEventListener('orientationchange', adjustLayoutForMobile);
+        // Valideer bestandsgrootte (10MB limiet)
+        if (file.size > 10 * 1024 * 1024) {
+            alert("File size exceeds 10MB limit.");
+            fileInput.value = '';
+            return;
+        }
+        
+        fileNameDisplay.textContent = file.name;
+        
+        // Reset previews
+        imagePreview.classList.remove('show');
+        videoPreview.classList.remove('show');
+        
+        // Toon preview
+        if (file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                imagePreview.src = e.target.result;
+                imagePreview.classList.add('show');
+            };
+            reader.readAsDataURL(file);
+        } else if (file.type.startsWith('video/')) {
+            const url = URL.createObjectURL(file);
+            videoPreview.src = url;
+            videoPreview.classList.add('show');
+        }
+        
+        if (currentUser) {
+            captionText.disabled = false;
+            uploadBtn.disabled = false;
+            uploadBtn.setAttribute('aria-disabled', 'false');
+        }
+    } else {
+        fileNameDisplay.textContent = "No file selected";
+        imagePreview.classList.remove('show');
+        videoPreview.classList.remove('show');
+        uploadBtn.disabled = true;
+        uploadBtn.setAttribute('aria-disabled', 'true');
+    }
+});
 
-        // Sign In
-        signInForm.onsubmit = async (e) => {
-            e.preventDefault();
-            const email = document.getElementById("signInEmail").value;
-            const password = document.getElementById("signInPassword").value;
-            
-            try {
-                await signInWithEmailAndPassword(auth, email, password);
-                closeSignInModal();
-            } catch (err) {
-                alert("Error: " + err.message);
-            }
-        };
-
-        // Sign Up
-        signUpForm.onsubmit = async (e) => {
-            e.preventDefault();
-            const username = document.getElementById("signUpUsername").value.trim();
-            const email = document.getElementById("signUpEmail").value;
-            const password = document.getElementById("signUpPassword").value;
-            
-            if (username.length < 3 || username.length > 20) {
-                alert("Username must be between 3 and 20 characters.");
-                return;
-            }
-
-            try {
-                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                const user = userCredential.user;
-                await setDoc(doc(db, "users", user.uid), {
-                    username: username,
-                    email: email
-                });
-                alert("Account created!");
-                closeSignUpModal();
-            } catch (err) {
-                alert("Error: " + err.message);
-            }
-        };
-
-        // Log out
-        logoutBtn.onclick = () => {
-            signOut(auth);
-        };
-
-        // Auth state observer
-        let currentUser = null;
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                const userDoc = await getDoc(doc(db, "users", user.uid));
-                currentUser = {
-                    ...user,
-                    username: userDoc.data().username
-                };
-                logoutBtn.style.display = "inline-block";
-                authButton.classList.add('hidden');
-                postText.disabled = false;
-                postText.placeholder = "Share something about Jenna...";
-                postBtn.disabled = false;
-            } else {
-                currentUser = null;
-                logoutBtn.style.display = "none";
-                authButton.classList.remove('hidden');
-                postText.disabled = true;
-                postText.placeholder = "Sign in to post a comment...";
-                postBtn.disabled = true;
-            }
-            forumSection.style.display = "block";
-        });
-
-        // Post - met verbeterde focus handling
-        postBtn.onclick = async () => {
-            if (currentUser && postText.value.trim() !== "") {
+// Upload handler
+uploadForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    if (!currentUser) {
+        alert("Please sign in to upload media.");
+        return;
+    }
+    
+    const file = fileInput.files[0];
+    if (!file) {
+        alert("Please select a file to upload.");
+        return;
+    }
+    
+    const hadFocus = document.activeElement === captionText;
+    loadingSpinner.style.display = 'block';
+    uploadBtn.disabled = true;
+    uploadBtn.setAttribute('aria-disabled', 'true');
+    
+    try {
+        const storageRef = ref(storage, `gallery/${currentUser.uid}/${Date.now()}_${file.name}`);
+        const uploadTask = uploadBytesResumable(storageRef, file);
+        
+        uploadTask.on('state_changed',
+            (snapshot) => {
+                const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                console.log('Upload is ' + progress + '% done');
+            },
+            (error) => {
+                console.error("Upload failed:", error);
+                alert("Upload failed: " + error.message);
+                loadingSpinner.style.display = 'none';
+                uploadBtn.disabled = false;
+                uploadBtn.setAttribute('aria-disabled', 'false');
+            },
+            async () => {
                 try {
-                    // Bewaar de focus status
-                    const hadFocus = document.activeElement === postText;
+                    const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
                     
-                    // Post naar Firebase
-                    await addDoc(collection(db, "posts"), {
-                        text: postText.value,
+                    await addDoc(collection(db, "gallery"), {
+                        userId: currentUser.uid,
                         username: currentUser.username,
-                        email: currentUser.email,
-                        timestamp: new Date()
+                        caption: captionText.value.trim(),
+                        fileURL: downloadURL,
+                        fileType: file.type.startsWith('image/') ? 'image' : 'video',
+                        fileName: file.name,
+                        timestamp: new Date(),
+                        likes: 0,
+                        likedBy: [],
+                        views: 0,
+                        comments: 0
                     });
                     
-                    // Leeg het tekstveld
-                    postText.value = "";
+                    // Reset formulier
+                    uploadForm.reset();
+                    fileNameDisplay.textContent = "No file selected";
+                    imagePreview.classList.remove('show');
+                    videoPreview.classList.remove('show');
+                    captionText.disabled = !currentUser;
+                    uploadBtn.disabled = true;
+                    uploadBtn.setAttribute('aria-disabled', 'true');
+                    loadingSpinner.style.display = 'none';
                     
-                    // BELANGRIJK: focus onmiddellijk teruggeven
+                    // Herstel focus
                     if (hadFocus) {
-                        postText.focus();
+                        captionText.focus();
+                        setTimeout(() => captionText.focus(), 50);
                     }
                     
-                    // Extra veiligheid: focus na een korte vertraging opnieuw zetten
-                    // Dit helpt op sommige mobiele apparaten die focus verliezen door de animatie
-                    setTimeout(() => {
-                        postText.focus();
-                    }, 50);
-                } catch (err) {
-                    console.error("Error posting:", err);
+                    alert("Media uploaded successfully!");
+                } catch (error) {
+                    console.error("Error saving media:", error);
+                    alert("Error saving media: " + error.message);
+                    loadingSpinner.style.display = 'none';
+                    uploadBtn.disabled = false;
+                    uploadBtn.setAttribute('aria-disabled', 'false');
                 }
             }
-        };
+        );
+    } catch (error) {
+        console.error("Upload error:", error);
+        alert("Upload error: " + error.message);
+        loadingSpinner.style.display = 'none';
+        uploadBtn.disabled = false;
+        uploadBtn.setAttribute('aria-disabled', 'false');
+    }
+});
 
-        // Format date
-        function formatDate(date) {
-            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        }
-        
-        // Check for different day
-        function isDifferentDay(date1, date2) {
-            return date1.getDate() !== date2.getDate() || 
-                   date1.getMonth() !== date2.getMonth() ||
-                   date1.getFullYear() !== date2.getFullYear();
-        }
-
-        // Show posts met verbeterde vloeiende scrolling
-        const q = query(collection(db, "posts"), orderBy("timestamp", "asc"));
-        onSnapshot(q, snapshot => {
-            let lastDate = null;
-            // Controleer of we dichtbij het einde waren, om te bepalen of we moeten scrollen
-            const wasAtBottom = postsDiv.scrollTop + postsDiv.clientHeight >= postsDiv.scrollHeight - 150;
-            // Huidige scrollpositie onthouden
-            const currentScrollTop = postsDiv.scrollTop;
-            const oldHeight = postsDiv.scrollHeight;
-            
-            postsDiv.innerHTML = "";
-            
-            snapshot.forEach(doc => {
-                const postData = doc.data();
-                const postDate = postData.timestamp.toDate();
-                
-                if (!lastDate || isDifferentDay(postDate, lastDate)) {
-                    const dateDivider = document.createElement("div");
-                    dateDivider.classList.add("date-divider");
-                    dateDivider.textContent = postDate.toLocaleDateString();
-                    postsDiv.appendChild(dateDivider);
-                }
-                lastDate = postDate;
-                
-                const postDiv = document.createElement("div");
-                postDiv.classList.add("post");
-                
-                const postHeader = document.createElement("div");
-                postHeader.classList.add("post-header");
-                
-                const usernameSpan = document.createElement("span");
-                usernameSpan.textContent = postData.username;
-                
-                const timestampSpan = document.createElement("span");
-                timestampSpan.textContent = formatDate(postDate);
-                
-                postHeader.appendChild(usernameSpan);
-                postHeader.appendChild(timestampSpan);
-                
-                const postContent = document.createElement("div");
-                postContent.classList.add("post-content");
-                postContent.textContent = postData.text;
-                
-                postDiv.appendChild(postHeader);
-                postDiv.appendChild(postContent);
-                
-                postsDiv.appendChild(postDiv);
-            });
-            
-            // Wacht een moment tot de DOM is bijgewerkt
-            setTimeout(() => {
-                // Hoogteverschil berekenen
-                const newHeight = postsDiv.scrollHeight;
-                const heightDiff = newHeight - oldHeight;
-                
-                // Als we nieuwe content hebben en dichtbij het einde waren,
-                // scroll dan soepel naar het nieuwe einde
-                if (wasAtBottom && heightDiff > 0) {
-                    // Soepel scrollen naar het einde
-                    postsDiv.scrollTo({
-                        top: postsDiv.scrollHeight,
-                        behavior: 'smooth'
-                    });
-                } else if (heightDiff > 0 && !wasAtBottom) {
-                    // Behoud de huidige scrollpositie als we niet aan het einde waren
-                    postsDiv.scrollTop = currentScrollTop;
-                }
-            }, 50);
-        });
-
-        // Verbeterde input handling voor mobiel
-        if (isMobile) {
-            // Zorg ervoor dat de input area altijd zichtbaar is
-            document.addEventListener('DOMContentLoaded', function() {
-                // Force input area naar juiste positie
-                const postInputArea = document.querySelector('.post-input-area');
-                
-                // Forceer de juiste positie bij laden
-                setTimeout(() => {
-                    postInputArea.style.position = 'fixed';
-                    postInputArea.style.bottom = '0';
-                    postInputArea.style.left = '0';
-                    postInputArea.style.right = '0';
-                    postInputArea.style.zIndex = '9999';
-                    
-                    // Zorg ervoor dat de body de volledige hoogte gebruikt
-                    document.body.style.height = window.innerHeight + 'px';
-                    
-                    // Verhindert mobiele browser UI elementen
-                    window.scrollTo(0, 1);
-                }, 300);
-            });
-
-            // Voorkom dat het scherm verschuift bij input focus en blijf boven toetsenbord
-            postText.addEventListener('focus', (e) => {
-                // Verplaats content indien nodig
-                setTimeout(() => {
-                    const postInputArea = document.querySelector('.post-input-area');
-                    postInputArea.style.position = 'fixed';
-                    postInputArea.style.bottom = '0';
-                    
-                    // Op sommige iOS toestellen helpt dit om boven het toetsenbord te blijven
-                    if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-                        document.body.scrollTop = document.body.scrollHeight;
-                        window.scrollTo(0, document.body.scrollHeight);
-                    }
-                }, 300);
-            });
-            
-            // Extra handler voor virtueel toetsenbord verschijning
-            window.addEventListener('resize', function() {
-                // Als het scherm kleiner wordt (toetsenbord verschijnt), regel dan de positie
-                const postInputArea = document.querySelector('.post-input-area');
-                postInputArea.style.position = 'fixed';
-                postInputArea.style.bottom = '0';
-                postInputArea.style.zIndex = '9999';
-            });
-        }
-
-        // Modals
-        window.openSignInModal = () => {
-            document.getElementById("signInModal").style.display = "flex";
-        };
-        window.closeSignInModal = () => {
-            document.getElementById("signInModal").style.display = "none";
-        };
-        window.openSignUpModal = () => {
-            document.getElementById("signUpModal").style.display = "flex";
-        };
-        window.closeSignUpModal = () => {
-            document.getElementById("signUpModal").style.display = "none";
-        };
-        window.switchToSignUp = () => {
-            closeSignInModal();
-            openSignUpModal();
-        };
-        window.switchToSignIn = () => {
-            closeSignUpModal();
-            openSignInModal();
-        };
-    </script>
-</body>
-</html>
+// Placeholder voor loadGalleryContent (bestaande functie, blijft ongewijzigd)
+async function loadGalleryContent() {
+    // Bestaande logica voor het laden van gallery-items
+    // Voeg hier je bestaande code toe
+}
