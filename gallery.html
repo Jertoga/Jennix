@@ -922,4 +922,561 @@
                             });
                             
                             // Reset form
-                            file
+                            fileInput.value = '';
+                            fileNameDisplay.textContent = "No file selected";
+                            captionText.value = '';
+                            imagePreview.classList.remove('show');
+                            videoPreview.classList.remove('show');
+                            
+                            // Hide loading indicator
+                            loadingSpinner.style.display = 'none';
+                            uploadBtn.disabled = false;
+                            
+                            // Reload gallery content
+                            loadGalleryContent();
+                            
+                            alert("Upload successful!");
+                        } catch (error) {
+                            console.error("Error adding document:", error);
+                            alert("Error saving media data: " + error.message);
+                            loadingSpinner.style.display = 'none';
+                            uploadBtn.disabled = false;
+                        }
+                    }
+                );
+            } catch (error) {
+                console.error("Upload error:", error);
+                alert("Upload error: " + error.message);
+                loadingSpinner.style.display = 'none';
+                uploadBtn.disabled = false;
+            }
+        }
+
+        // Load gallery content based on current sort and view settings
+        async function loadGalleryContent() {
+            loadingSpinner.style.display = 'block';
+            galleryGrid.innerHTML = '';
+            
+            try {
+                // Create query based on current sort and view
+                let q;
+                
+                // Base query on view type
+                if (currentView === 'photos') {
+                    q = query(
+                        collection(db, "gallery"),
+                        where("fileType", "==", "image")
+                    );
+                } else if (currentView === 'videos') {
+                    q = query(
+                        collection(db, "gallery"),
+                        where("fileType", "==", "video")
+                    );
+                } else if (currentView === 'liked' && currentUser) {
+                    // For liked view, we need to handle differently
+                    // First get the user's liked items
+                    const likedItems = await Promise.all(
+                        userLikes.map(async (id) => {
+                            const docRef = doc(db, "gallery", id);
+                            const docSnap = await getDoc(docRef);
+                            if (docSnap.exists()) {
+                                return { id: docSnap.id, ...docSnap.data() };
+                            }
+                            return null;
+                        })
+                    );
+                    
+                    // Filter out any null results and sort
+                    mediaItems = likedItems.filter(item => item !== null);
+                    
+                    // Sort the results
+                    if (currentSort === 'recent') {
+                        mediaItems.sort((a, b) => b.timestamp.toDate() - a.timestamp.toDate());
+                    } else if (currentSort === 'popular') {
+                        mediaItems.sort((a, b) => b.likes - a.likes);
+                    } else if (currentSort === 'views') {
+                        mediaItems.sort((a, b) => b.views - a.views);
+                    }
+                    
+                    // Render the gallery
+                    renderGallery();
+                    loadingSpinner.style.display = 'none';
+                    return;
+                } else {
+                    // All media
+                    q = query(collection(db, "gallery"));
+                }
+                
+                // Add sorting
+                if (currentSort === 'recent') {
+                    q = query(q, orderBy("timestamp", "desc"));
+                } else if (currentSort === 'popular') {
+                    q = query(q, orderBy("likes", "desc"));
+                } else if (currentSort === 'views') {
+                    q = query(q, orderBy("views", "desc"));
+                }
+                
+                // Get documents
+                const querySnapshot = await getDocs(q);
+                
+                mediaItems = [];
+                querySnapshot.forEach((doc) => {
+                    mediaItems.push({ id: doc.id, ...doc.data() });
+                });
+                
+                // Render the gallery
+                renderGallery();
+                
+            } catch (error) {
+                console.error("Error loading gallery:", error);
+                alert("Error loading gallery: " + error.message);
+            } finally {
+                loadingSpinner.style.display = 'none';
+            }
+        }
+
+        // Render gallery based on mediaItems array
+        function renderGallery() {
+            galleryGrid.innerHTML = '';
+            
+            if (mediaItems.length === 0) {
+                noContentMessage.style.display = 'block';
+                return;
+            }
+            
+            noContentMessage.style.display = 'none';
+            
+            mediaItems.forEach((item) => {
+                const galleryItem = document.createElement('div');
+                galleryItem.classList.add('gallery-item');
+                galleryItem.dataset.id = item.id;
+                
+                // Check if it's image or video
+                if (item.fileType === 'image') {
+                    const img = document.createElement('img');
+                    img.src = item.fileURL;
+                    img.alt = item.caption || 'Gallery image';
+                    img.loading = 'lazy'; // Lazy loading for better performance
+                    galleryItem.appendChild(img);
+                } else {
+                    const video = document.createElement('video');
+                    video.src = item.fileURL;
+                    video.preload = 'metadata';
+                    galleryItem.appendChild(video);
+                    
+                    // Add play button overlay for videos
+                    const playOverlay = document.createElement('div');
+                    playOverlay.classList.add('play-overlay');
+                    playOverlay.innerHTML = '▶';
+                    galleryItem.appendChild(playOverlay);
+                }
+                
+                // Create overlay with info and actions
+                const overlay = document.createElement('div');
+                overlay.classList.add('gallery-item-overlay');
+                
+                const info = document.createElement('div');
+                info.classList.add('gallery-item-info');
+                info.textContent = item.username || 'Anonymous';
+                
+                const actions = document.createElement('div');
+                actions.classList.add('gallery-item-actions');
+                
+                const likeBtn = document.createElement('button');
+                likeBtn.classList.add('like-btn');
+                likeBtn.innerHTML = `<span>♡</span> <span>${item.likes || 0}</span>`;
+                
+                // Check if user has liked this item
+                if (currentUser && userLikes.includes(item.id)) {
+                    likeBtn.classList.add('liked');
+                    likeBtn.querySelector('span:first-child').textContent = '♥';
+                }
+                
+                const commentBtn = document.createElement('button');
+                commentBtn.classList.add('comment-btn');
+                commentBtn.innerHTML = `<span>💬</span> <span>${item.comments || 0}</span>`;
+                
+                actions.appendChild(likeBtn);
+                actions.appendChild(commentBtn);
+                
+                overlay.appendChild(info);
+                overlay.appendChild(actions);
+                
+                galleryItem.appendChild(overlay);
+                
+                // Click handler to open modal
+                galleryItem.addEventListener('click', (e) => {
+                    // Don't open modal if clicking like or comment button
+                    if (e.target.closest('.like-btn') || e.target.closest('.comment-btn')) {
+                        return;
+                    }
+                    openMediaModal(item);
+                });
+                
+                // Like button handler
+                likeBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    toggleLike(item.id);
+                });
+                
+                // Comment button handler
+                commentBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    openMediaModal(item, true);
+                });
+                
+                galleryGrid.appendChild(galleryItem);
+            });
+        }
+
+        // Open media modal
+        async function openMediaModal(item, focusComments = false) {
+            currentMediaId = item.id;
+            
+            // Update media view count
+            if (currentUser) {
+                await updateDoc(doc(db, "gallery", item.id), {
+                    views: increment(1)
+                });
+            }
+            
+            // Update modal UI
+            const modalTitle = document.querySelector('.modal-title');
+            modalTitle.textContent = item.caption || 'Media Details';
+            
+            modalMediaContainer.innerHTML = '';
+            
+            // Add media to modal
+            if (item.fileType === 'image') {
+                const img = document.createElement('img');
+                img.src = item.fileURL;
+                img.alt = item.caption || 'Gallery image';
+                modalMediaContainer.appendChild(img);
+            } else {
+                const video = document.createElement('video');
+                video.src = item.fileURL;
+                video.controls = true;
+                video.autoplay = true;
+                modalMediaContainer.appendChild(video);
+            }
+            
+            // Update like button
+            modalLikeBtn.querySelector('.like-count').textContent = item.likes || 0;
+            
+            if (currentUser && userLikes.includes(item.id)) {
+                modalLikeBtn.classList.add('liked');
+                modalLikeBtn.querySelector('.like-icon').textContent = '♥';
+            } else {
+                modalLikeBtn.classList.remove('liked');
+                modalLikeBtn.querySelector('.like-icon').textContent = '♡';
+            }
+            
+            // Update stats
+            document.querySelector('.view-count').textContent = `${item.views || 0} views`;
+            document.querySelector('.upload-date').textContent = formatDate(item.timestamp.toDate());
+            
+            // Load comments
+            loadComments(item.id);
+            
+            // Show modal
+            mediaModal.classList.add('show');
+            
+            // Add modal like button handler
+            modalLikeBtn.onclick = () => toggleLike(item.id);
+            
+            // Focus comment input if requested
+            if (focusComments && currentUser) {
+                commentInput.focus();
+            }
+        }
+
+        // Load comments for a media item
+        async function loadComments(mediaId) {
+            commentsArea.innerHTML = '';
+            
+            try {
+                const q = query(
+                    collection(db, "comments"),
+                    where("mediaId", "==", mediaId),
+                    orderBy("timestamp", "desc")
+                );
+                
+                const querySnapshot = await getDocs(q);
+                
+                if (querySnapshot.empty) {
+                    commentsArea.innerHTML = '<p>No comments yet. Be the first to comment!</p>';
+                    return;
+                }
+                
+                querySnapshot.forEach((doc) => {
+                    const comment = doc.data();
+                    const commentEl = document.createElement('div');
+                    commentEl.classList.add('comment');
+                    
+                    const commentHeader = document.createElement('div');
+                    commentHeader.classList.add('comment-header');
+                    
+                    const username = document.createElement('span');
+                    username.classList.add('comment-username');
+                    username.textContent = comment.username;
+                    
+                    const timestamp = document.createElement('span');
+                    timestamp.classList.add('comment-timestamp');
+                    timestamp.textContent = formatDate(comment.timestamp.toDate());
+                    
+                    commentHeader.appendChild(username);
+                    commentHeader.appendChild(timestamp);
+                    
+                    const commentText = document.createElement('p');
+                    commentText.classList.add('comment-text');
+                    commentText.textContent = comment.text;
+                    
+                    commentEl.appendChild(commentHeader);
+                    commentEl.appendChild(commentText);
+                    
+                    commentsArea.appendChild(commentEl);
+                });
+            } catch (error) {
+                console.error("Error loading comments:", error);
+                commentsArea.innerHTML = '<p>Error loading comments.</p>';
+            }
+        }
+
+        // Comment submit handler
+        commentSubmit.addEventListener('click', async () => {
+            if (!currentUser) {
+                alert("Please sign in to comment.");
+                return;
+            }
+            
+            const commentText = commentInput.value.trim();
+            if (!commentText) return;
+            
+            try {
+                // Add comment to database
+                await addDoc(collection(db, "comments"), {
+                    mediaId: currentMediaId,
+                    userId: currentUser.uid,
+                    username: currentUser.username,
+                    text: commentText,
+                    timestamp: new Date()
+                });
+                
+                // Update comment count in media document
+                await updateDoc(doc(db, "gallery", currentMediaId), {
+                    comments: increment(1)
+                });
+                
+                // Clear input
+                commentInput.value = '';
+                
+                // Reload comments
+                loadComments(currentMediaId);
+                
+                // Reload gallery to update comment counts
+                loadGalleryContent();
+            } catch (error) {
+                console.error("Error adding comment:", error);
+                alert("Error adding comment: " + error.message);
+            }
+        });
+
+        // Toggle like on a media item
+        async function toggleLike(mediaId) {
+            if (!currentUser) {
+                alert("Please sign in to like media.");
+                return;
+            }
+            
+            try {
+                const mediaRef = doc(db, "gallery", mediaId);
+                const userRef = doc(db, "users", currentUser.uid);
+                
+                // Check if user has already liked this item
+                const hasLiked = userLikes.includes(mediaId);
+                
+                if (hasLiked) {
+                    // Unlike
+                    await updateDoc(mediaRef, {
+                        likes: increment(-1),
+                        likedBy: arrayRemove(currentUser.uid)
+                    });
+                    
+                    await updateDoc(userRef, {
+                        likes: arrayRemove(mediaId)
+                    });
+                    
+                    // Update local state
+                    userLikes = userLikes.filter(id => id !== mediaId);
+                } else {
+                    // Like
+                    await updateDoc(mediaRef, {
+                        likes: increment(1),
+                        likedBy: arrayUnion(currentUser.uid)
+                    });
+                    
+                    await updateDoc(userRef, {
+                        likes: arrayUnion(mediaId)
+                    });
+                    
+                    // Update local state
+                    userLikes.push(mediaId);
+                }
+                
+                // Update gallery and modal UI
+                loadGalleryContent();
+                
+                // If modal is open and showing this item, update like count
+                if (mediaModal.classList.contains('show') && currentMediaId === mediaId) {
+                    modalLikeBtn.querySelector('.like-count').textContent = hasLiked ? 
+                        parseInt(modalLikeBtn.querySelector('.like-count').textContent) - 1 :
+                        parseInt(modalLikeBtn.querySelector('.like-count').textContent) + 1;
+                    
+                    if (hasLiked) {
+                        modalLikeBtn.classList.remove('liked');
+                        modalLikeBtn.querySelector('.like-icon').textContent = '♡';
+                    } else {
+                        modalLikeBtn.classList.add('liked');
+                        modalLikeBtn.querySelector('.like-icon').textContent = '♥';
+                    }
+                }
+                
+            } catch (error) {
+                console.error("Error toggling like:", error);
+                alert("Error toggling like: " + error.message);
+            }
+        }
+
+        // Fetch user likes
+        async function fetchUserLikes() {
+            if (!currentUser) {
+                userLikes = [];
+                return;
+            }
+            
+            try {
+                const userDoc = await getDoc(doc(db, "users", currentUser.uid));
+                
+                if (userDoc.exists() && userDoc.data().likes) {
+                    userLikes = userDoc.data().likes;
+                } else {
+                    userLikes = [];
+                }
+            } catch (error) {
+                console.error("Error fetching user likes:", error);
+                userLikes = [];
+            }
+        }
+
+        // Sort and view button handlers
+        sortButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                // Remove active class from all buttons
+                sortButtons.forEach(b => b.classList.remove('active'));
+                
+                // Add active class to clicked button
+                btn.classList.add('active');
+                
+                // Update current sort
+                currentSort = btn.dataset.sort;
+                
+                // Reload gallery content
+                loadGalleryContent();
+            });
+        });
+        
+        viewButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                // Check if user is logged in for "liked" view
+                if (btn.dataset.view === 'liked' && !currentUser) {
+                    alert("Please sign in to view your liked media.");
+                    return;
+                }
+                
+                // Remove active class from all buttons
+                viewButtons.forEach(b => b.classList.remove('active'));
+                
+                // Add active class to clicked button
+                btn.classList.add('active');
+                
+                // Update current view
+                currentView = btn.dataset.view;
+                
+                // Reload gallery content
+                loadGalleryContent();
+            });
+        });
+
+        // Close modal
+        document.querySelector('.close-modal').addEventListener('click', () => {
+            mediaModal.classList.remove('show');
+            currentMediaId = null;
+        });
+
+        // Format date helper
+        function formatDate(date) {
+            const now = new Date();
+            const diff = Math.floor((now - date) / 1000); // Difference in seconds
+            
+            if (diff < 60) {
+                return 'Just now';
+            } else if (diff < 3600) {
+                const minutes = Math.floor(diff / 60);
+                return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+            } else if (diff < 86400) {
+                const hours = Math.floor(diff / 3600);
+                return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+            } else if (diff < 2592000) {
+                const days = Math.floor(diff / 86400);
+                return `${days} day${days > 1 ? 's' : ''} ago`;
+            } else {
+                return date.toLocaleDateString();
+            }
+        }
+
+        // Modal functions for sign in/sign up
+        window.openSignInModal = () => {
+            document.getElementById("signInModal").style.display = "flex";
+            document.getElementById("signInEmail").focus();
+        };
+        
+        window.closeSignInModal = () => {
+            document.getElementById("signInModal").style.display = "none";
+        };
+        
+        window.openSignUpModal = () => {
+            document.getElementById("signUpModal").style.display = "flex";
+            document.getElementById("signUpUsername").focus();
+        };
+        
+        window.closeSignUpModal = () => {
+            document.getElementById("signUpModal").style.display = "none";
+        };
+        
+        window.switchToSignUp = () => {
+            closeSignInModal();
+            openSignUpModal();
+        };
+        
+        window.switchToSignIn = () => {
+            closeSignUpModal();
+            openSignInModal();
+        };
+
+        // Initialize gallery
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initial gallery load will be triggered by auth state change
+            // Add click outside to close modals
+            window.addEventListener('click', (e) => {
+                if (e.target === mediaModal) {
+                    mediaModal.classList.remove('show');
+                    currentMediaId = null;
+                }
+                if (e.target.classList.contains('modal') && !e.target.querySelector('.modal-content').contains(e.target)) {
+                    e.target.style.display = 'none';
+                }
+            });
+        });
+    </script>
+</body>
+</html>
