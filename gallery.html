@@ -335,32 +335,6 @@
             opacity: 0;
             pointer-events: none;
         }
-
-        .date-divider {
-            text-align: center;
-            color: #888;
-            margin: 15px 0;
-            position: relative;
-            width: 100%;
-        }
-
-        .date-divider::before, .date-divider::after {
-            content: "";
-            position: absolute;
-            top: 50%;
-            width: 42%;
-            height: 1px;
-            background-color: #333;
-        }
-
-        .date-divider::before {
-            left: 0;
-        }
-
-        .date-divider::after {
-            right: 0;
-        }
-
         
         @media (min-width: 768px) {
             .modal-body {
@@ -660,39 +634,35 @@
 
     <!-- Sign In Modal -->
     <div id="signInModal" class="modal">
-        <div class="modal-content" style="max-width: 400px;">
-            <span class="close-btn" onclick="closeSignInModal()">&times;</span>
-            <div style="padding: 20px;">
-                <h3>Sign In to Jennix</h3>
-                <form id="signInForm">
-                    <label for="signInEmail">Email</label>
-                    <input type="email" id="signInEmail" placeholder="Enter your email" required />
-                    <label for="signInPassword">Password</label>
-                    <input type="password" id="signInPassword" placeholder="Enter your password" required />
-                    <button type="submit">Sign In</button>
-                </form>
-                <p class="switch-text">Don't have an account? <a href="#" onclick="switchToSignUp()">Sign Up</a></p>
-            </div>
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeSignInModal()">×</span>
+            <h3>Sign In to Jennix</h3>
+            <form id="signInForm">
+                <label for="signInEmail">Email</label>
+                <input type="email" id="signInEmail" placeholder="Enter your email" required />
+                <label for="signInPassword">Password</label>
+                <input type="password" id="signInPassword" placeholder="Enter your password" required />
+                <button type="submit">Sign In</button>
+            </form>
+            <p class="switch-text">Don't have an account? <a href="#" onclick="switchToSignUp()">Sign Up</a></p>
         </div>
     </div>
 
     <!-- Sign Up Modal -->
     <div id="signUpModal" class="modal">
-        <div class="modal-content" style="max-width: 400px;">
-            <span class="close-btn" onclick="closeSignUpModal()">&times;</span>
-            <div style="padding: 20px;">
-                <h3>Create a Jennix Account</h3>
-                <form id="signUpForm">
-                    <label for="signUpUsername">Username</label>
-                    <input type="text" id="signUpUsername" placeholder="Choose a username" required minlength="3" maxlength="20" />
-                    <label for="signUpEmail">Email</label>
-                    <input type="email" id="signUpEmail" placeholder="Enter your email" required />
-                    <label for="signUpPassword">Password</label>
-                    <input type="password" id="signUpPassword" placeholder="Choose a password" required minlength="6" />
-                    <button type="submit">Sign Up</button>
-                </form>
-                <p class="switch-text">Already have an account? <a href="#" onclick="switchToSignIn()">Sign In</a></p>
-            </div>
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeSignUpModal()">×</span>
+            <h3>Create a Jennix Account</h3>
+            <form id="signUpForm">
+                <label for="signUpUsername">Username</label>
+                <input type="text" id="signUpUsername" placeholder="Choose a username" required minlength="3" maxlength="20" />
+                <label for="signUpEmail">Email</label>
+                <input type="email" id="signUpEmail" placeholder="Enter your email" required />
+                <label for="signUpPassword">Password</label>
+                <input type="password" id="signUpPassword" placeholder="Choose a password" required minlength="6" />
+                <button type="submit">Sign Up</button>
+            </form>
+            <p class="switch-text">Already have an account? <a href="#" onclick="switchToSignIn()">Sign In</a></p>
         </div>
     </div>
 
