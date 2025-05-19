@@ -308,6 +308,59 @@
             overflow: hidden;
             flex-grow: 1;
         }
+
+         #logoutBtn {
+            display: none;
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: transparent;
+            color: #f7a800;
+            border: 1px solid #f7a800;
+            padding: 8px 15px;
+            border-radius: 4px;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        #logoutBtn:hover {
+            background-color: #f7a800;
+            color: #121212;
+        }
+
+        .sign-in-button {
+            transition: opacity 0.3s ease;
+        }
+
+        .sign-in-button.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .date-divider {
+            text-align: center;
+            color: #888;
+            margin: 15px 0;
+            position: relative;
+            width: 100%;
+        }
+
+        .date-divider::before, .date-divider::after {
+            content: "";
+            position: absolute;
+            top: 50%;
+            width: 42%;
+            height: 1px;
+            background-color: #333;
+        }
+
+        .date-divider::before {
+            left: 0;
+        }
+
+        .date-divider::after {
+            right: 0;
+        }
+
         
         @media (min-width: 768px) {
             .modal-body {
