@@ -785,54 +785,50 @@
             loadGalleryContent();
         });
 
-        // Sign In handler
-        signInForm.addEventListener('submit', async (e) => {
+         // Sign In
+        signInForm.onsubmit = async (e) => {
             e.preventDefault();
-            const email = document.getElementById('signInEmail').value;
-            const password = document.getElementById('signInPassword').value;
+            const email = document.getElementById("signInEmail").value;
+            const password = document.getElementById("signInPassword").value;
             
             try {
                 await signInWithEmailAndPassword(auth, email, password);
                 closeSignInModal();
-            } catch (error) {
-                alert("Error signing in: " + error.message);
+            } catch (err) {
+                alert("Error: " + err.message);
             }
-        });
+        };
 
-        // Sign Up handler
-        signUpForm.addEventListener('submit', async (e) => {
+        // Sign Up
+        signUpForm.onsubmit = async (e) => {
             e.preventDefault();
-            const username = document.getElementById('signUpUsername').value.trim();
-            const email = document.getElementById('signUpEmail').value;
-            const password = document.getElementById('signUpPassword').value;
+            const username = document.getElementById("signUpUsername").value.trim();
+            const email = document.getElementById("signUpEmail").value;
+            const password = document.getElementById("signUpPassword").value;
             
             if (username.length < 3 || username.length > 20) {
                 alert("Username must be between 3 and 20 characters.");
                 return;
             }
-            
+
             try {
                 const userCredential = await createUserWithEmailAndPassword(auth, email, password);
                 const user = userCredential.user;
-                
                 await setDoc(doc(db, "users", user.uid), {
                     username: username,
-                    email: email,
-                    createdAt: new Date(),
-                    likes: []
+                    email: email
                 });
-                
-                alert("Account created successfully!");
+                alert("Account created!");
                 closeSignUpModal();
-            } catch (error) {
-                alert("Error creating account: " + error.message);
+            } catch (err) {
+                alert("Error: " + err.message);
             }
-        });
+        };
 
-        // Log out handler
-        logoutBtn.addEventListener('click', () => {
+        // Log out
+        logoutBtn.onclick = () => {
             signOut(auth);
-        });
+        };
 
         // File input change handler
         fileInput.addEventListener('change', () => {
