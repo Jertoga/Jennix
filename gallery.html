@@ -830,6 +830,32 @@
             signOut(auth);
         };
 
+ // Auth state observer
+        let currentUser = null;
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                const userDoc = await getDoc(doc(db, "users", user.uid));
+                currentUser = {
+                    ...user,
+                    username: userDoc.data().username
+                };
+                logoutBtn.style.display = "inline-block";
+                authButton.classList.add('hidden');
+                postText.disabled = false;
+                postText.placeholder = "Share something about Jenna...";
+                postBtn.disabled = false;
+            } else {
+                currentUser = null;
+                logoutBtn.style.display = "none";
+                authButton.classList.remove('hidden');
+                postText.disabled = true;
+                postText.placeholder = "Sign in to post a comment...";
+                postBtn.disabled = true;
+            }
+            forumSection.style.display = "block";
+        });
+
+        
         // File input change handler
         fileInput.addEventListener('change', () => {
             const file = fileInput.files[0];
