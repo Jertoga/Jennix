@@ -60,7 +60,7 @@
             overflow-y: auto; /* Only scrollbar for comments */
             overflow-x: hidden; /* Hide horizontal scrollbar */
             margin-bottom: 10px;
-            padding-bottom: 15px;
+            padding-bottom: 15px; /* Adjust as needed for input area */
         }
 
         /* Custom scrollbar styling for #posts */
@@ -84,7 +84,7 @@
 
 
         .post-input-area {
-            position: sticky;
+            position: sticky; /* Will be adjusted by JS for mobile */
             bottom: 0;
             left: 0;
             right: 0;
@@ -179,6 +179,7 @@
             gap: 10px;
             margin-top: 10px;
             justify-content: flex-end;
+            flex-wrap: wrap; /* Allow buttons to wrap on smaller screens */
         }
 
         .post-actions button {
@@ -287,36 +288,28 @@
             }
 
             #forumSection {
-                height: calc(100vh - 120px); /* Adjust height for mobile header/footer */
                 padding: 15px 10px;
-                overflow: hidden;
-                position: relative;
-            }
-
-            .forum-container {
-                height: 100%;
-                overflow: hidden;
-                position: relative;
             }
 
             #posts {
-                padding-bottom: 90px;
-                height: 100%;
-                position: relative;
+                padding-bottom: 120px; /* Increased padding to ensure input area doesn't cover last posts */
             }
 
             .post-input-area {
-                position: fixed;
+                position: fixed; /* Keep it fixed at the bottom */
                 bottom: 0;
                 left: 0;
                 right: 0;
+                width: 100%;
                 max-width: 100%;
                 margin: 0 auto;
                 padding: 10px;
-                z-index: 999;
+                z-index: 999; /* Ensure it stays on top */
                 background-color: #181818;
                 border-top: 1px solid #333;
-                transform: translateZ(0);
+                box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
+                box-sizing: border-box;
+                transform: translateZ(0); /* Improve rendering performance */
             }
 
             #postText {
@@ -427,222 +420,14 @@
         const postBtn = document.getElementById("postBtn");
         const postText = document.getElementById("postText");
         const postsDiv = document.getElementById("posts");
+        const postInputArea = document.querySelector('.post-input-area');
 
-        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth <= 600;
+        // Check for mobile based on user agent and screen width
+        const isMobileDevice = () => /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth <= 600;
+        let unsubscribeSnapshot = null; // To store the unsubscribe function for onSnapshot
 
-        function adjustLayoutForMobile() {
-            if (isMobile) {
-                postText.style.minHeight = "60px";
-                const postInputArea = document.querySelector('.post-input-area');
-                postInputArea.style.position = 'fixed';
-                window.scrollTo(0, 1);
-                document.body.style.height = window.innerHeight + 'px';
-                postInputArea.style.bottom = '0';
-                postsDiv.style.paddingBottom = "90px";
-            }
-        }
-
-        adjustLayoutForMobile();
-        window.addEventListener('resize', adjustLayoutForMobile);
-        window.addEventListener('orientationchange', adjustLayoutForMobile);
-
-        signInForm.onsubmit = async (e) => {
-            e.preventDefault();
-            const email = document.getElementById("signInEmail").value;
-            const password = document.getElementById("signInPassword").value;
-            try {
-                await signInWithEmailAndPassword(auth, email, password);
-                closeSignInModal();
-            } catch (err) {
-                alert("Error: " + err.message);
-            }
-        };
-
-        signUpForm.onsubmit = async (e) => {
-            e.preventDefault();
-            const username = document.getElementById("signUpUsername").value.trim();
-            const email = document.getElementById("signUpEmail").value;
-            const password = document.getElementById("signUpPassword").value;
-            
-            if (username.length < 3 || username.length > 20) {
-                alert("Username must be between 3 and 20 characters.");
-                return;
-            }
-
-            try {
-                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                const user = userCredential.user;
-                await setDoc(doc(db, "users", user.uid), {
-                    username: username,
-                    email: email
-                });
-                alert("Account created!");
-                closeSignUpModal();
-            } catch (err) {
-                alert("Error: " + err.message);
-            }
-        };
-
-        logoutBtn.onclick = () => {
-            signOut(auth);
-        };
-
-        let currentUser = null;
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                const userDoc = await getDoc(doc(db, "users", user.uid));
-                currentUser = {
-                    ...user,
-                    username: userDoc.data().username
-                };
-                logoutBtn.style.display = "inline-block";
-                authButton.classList.add('hidden');
-                postText.disabled = false;
-                postText.placeholder = "Share something about Jenna...";
-                postBtn.disabled = false;
-            } else {
-                currentUser = null;
-                logoutBtn.style.display = "none";
-                authButton.classList.remove('hidden');
-                postText.disabled = true;
-                postText.placeholder = "Sign in to post a comment...";
-                postBtn.disabled = true;
-            }
-            forumSection.style.display = "block";
-        });
-
-        postBtn.onclick = async () => {
-            if (currentUser && postText.value.trim() !== "") {
-                try {
-                    const hadFocus = document.activeElement === postText;
-                    
-                    await addDoc(collection(db, "posts"), {
-                        text: postText.value,
-                        username: currentUser.username,
-                        userId: currentUser.uid,
-                        timestamp: new Date(), // Initial timestamp
-                        edited: false
-                    });
-                    
-                    postText.value = "";
-                    
-                    if (hadFocus) {
-                        postText.focus();
-                    }
-                    
-                    setTimeout(() => {
-                        postText.focus();
-                    }, 50);
-                } catch (err) {
-                    console.error("Error posting:", err);
-                }
-            }
-        };
-
-        // Format date and time
-        function formatDateTime(date) {
-            const today = new Date();
-            const yesterday = new Date(today);
-            yesterday.setDate(today.getDate() - 1);
-
-            if (isDifferentDay(date, today)) {
-                if (isDifferentDay(date, yesterday)) {
-                    // For dates before yesterday, show full date and time
-                    return date.toLocaleDateString('nl-NL', { year: 'numeric', month: 'short', day: 'numeric' }) + ' om ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                } else {
-                    // For yesterday
-                    return 'Gisteren om ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                }
-            } else {
-                // For today
-                return 'Vandaag om ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            }
-        }
-        
-        function isDifferentDay(date1, date2) {
-            return date1.getDate() !== date2.getDate() || 
-                   date1.getMonth() !== date2.getMonth() ||
-                   date1.getFullYear() !== date2.getFullYear();
-        }
-
-        async function editComment(postId, currentText, originalTimestamp) {
-            if (!currentUser) return;
-
-            const postElement = document.querySelector(`.post[data-id="${postId}"]`);
-            const postContentDiv = postElement.querySelector('.post-content');
-            const postActionsDiv = postElement.querySelector('.post-actions');
-
-            const editTextArea = document.createElement('textarea');
-            editTextArea.classList.add('editing-textarea');
-            editTextArea.value = currentText;
-            postContentDiv.innerHTML = '';
-            postContentDiv.appendChild(editTextArea);
-
-            const saveBtn = document.createElement('button');
-            saveBtn.textContent = 'Opslaan';
-            saveBtn.style.color = '#f7a800';
-            saveBtn.style.borderColor = '#f7a800';
-            saveBtn.style.backgroundColor = 'transparent';
-            saveBtn.style.padding = '5px 10px';
-            saveBtn.style.borderRadius = '4px';
-            saveBtn.style.cursor = 'pointer';
-            saveBtn.style.fontSize = '0.8em';
-            saveBtn.onmouseover = () => { saveBtn.style.backgroundColor = '#f7a800'; saveBtn.style.color = '#121212'; };
-            saveBtn.onmouseout = () => { saveBtn.style.backgroundColor = 'transparent'; saveBtn.style.color = '#f7a800'; };
-
-            const cancelBtn = document.createElement('button');
-            cancelBtn.textContent = 'Annuleren';
-            cancelBtn.style.color = '#bbb';
-            cancelBtn.style.borderColor = '#bbb';
-            cancelBtn.style.backgroundColor = 'transparent';
-            cancelBtn.style.padding = '5px 10px';
-            cancelBtn.style.borderRadius = '4px';
-            cancelBtn.style.cursor = 'pointer';
-            cancelBtn.style.fontSize = '0.8em';
-            cancelBtn.onmouseover = () => { cancelBtn.style.backgroundColor = '#bbb'; cancelBtn.style.color = '#1e1e1e'; };
-            cancelBtn.onmouseout = () => { cancelBtn.style.backgroundColor = 'transparent'; cancelBtn.style.color = '#bbb'; };
-
-            postActionsDiv.innerHTML = '';
-            postActionsDiv.appendChild(saveBtn);
-            postActionsDiv.appendChild(cancelBtn);
-
-            saveBtn.onclick = async () => {
-                const updatedText = editTextArea.value.trim();
-                if (updatedText !== "" && updatedText !== currentText) {
-                    try {
-                        const postRef = doc(db, "posts", postId);
-                        await updateDoc(postRef, {
-                            text: updatedText,
-                            edited: true,
-                            // Do NOT update timestamp here to keep original posting time
-                        });
-                    } catch (error) {
-                        console.error("Error updating document: ", error);
-                        alert("Fout bij het opslaan van de bewerking.");
-                    }
-                }
-            };
-
-            cancelBtn.onclick = () => {
-                // Revert to original display (handled by onSnapshot listener which will redraw)
-            };
-        }
-
-        async function deleteComment(postId) {
-            if (!currentUser) return;
-
-            if (confirm("Weet je zeker dat je deze comment wilt verwijderen?")) {
-                try {
-                    await deleteDoc(doc(db, "posts", postId));
-                } catch (error) {
-                    console.error("Error removing document: ", error);
-                    alert("Fout bij het verwijderen van de comment.");
-                }
-            }
-        }
-        
-        const q = query(collection(db, "posts"), orderBy("timestamp", "asc"));
-        onSnapshot(q, snapshot => {
+        // Function to render posts
+        function renderPosts(snapshot) {
             let lastDate = null;
             const wasAtBottom = postsDiv.scrollTop + postsDiv.clientHeight >= postsDiv.scrollHeight - 150;
             const currentScrollTop = postsDiv.scrollTop;
@@ -694,6 +479,7 @@
                 postDiv.appendChild(postHeader);
                 postDiv.appendChild(postContent);
 
+                // Ensure currentUser is available before adding edit/delete buttons
                 if (currentUser && currentUser.uid === postData.userId) {
                     const postActions = document.createElement('div');
                     postActions.classList.add('post-actions');
@@ -704,7 +490,7 @@
                     const editButton = document.createElement('button');
                     editButton.textContent = 'Bewerken';
                     editButton.disabled = timeElapsedEdit > 15;
-                    editButton.onclick = () => editComment(postId, postData.text, postDate); // Pass original timestamp
+                    editButton.onclick = () => editComment(postId, postData.text, postDate);
                     postActions.appendChild(editButton);
 
                     const deleteButton = document.createElement('button');
@@ -729,48 +515,269 @@
                         behavior: 'smooth'
                     });
                 } else if (heightDiff > 0 && !wasAtBottom) {
-                    postsDiv.scrollTop = currentScrollTop;
+                    // Only adjust if the scroll position is within the new content
+                    // To prevent jumping if new content is added far above the current scroll position
+                    postsDiv.scrollTop = currentScrollTop + heightDiff;
                 }
             }, 50);
+        }
+
+        signInForm.onsubmit = async (e) => {
+            e.preventDefault();
+            const email = document.getElementById("signInEmail").value;
+            const password = document.getElementById("signInPassword").value;
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                closeSignInModal();
+            } catch (err) {
+                alert("Error: " + err.message);
+            }
+        };
+
+        signUpForm.onsubmit = async (e) => {
+            e.preventDefault();
+            const username = document.getElementById("signUpUsername").value.trim();
+            const email = document.getElementById("signUpEmail").value;
+            const password = document.getElementById("signUpPassword").value;
+            
+            if (username.length < 3 || username.length > 20) {
+                alert("Username must be between 3 and 20 characters.");
+                return;
+            }
+
+            try {
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+                await setDoc(doc(db, "users", user.uid), {
+                    username: username,
+                    email: email
+                });
+                alert("Account created!");
+                closeSignUpModal();
+            } catch (err) {
+                alert("Error: " + err.message);
+            }
+        };
+
+        logoutBtn.onclick = () => {
+            signOut(auth);
+        };
+
+        let currentUser = null;
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                const userDoc = await getDoc(doc(db, "users", user.uid));
+                currentUser = {
+                    ...user,
+                    username: userDoc.data() ? userDoc.data().username : "Anonymous" // Fallback username
+                };
+                logoutBtn.style.display = "inline-block";
+                authButton.classList.add('hidden');
+                postText.disabled = false;
+                postText.placeholder = "Share something about Jenna...";
+                postBtn.disabled = false;
+            } else {
+                currentUser = null;
+                logoutBtn.style.display = "none";
+                authButton.classList.remove('hidden');
+                postText.disabled = true;
+                postText.placeholder = "Sign in to post a comment...";
+                postBtn.disabled = true;
+            }
+            forumSection.style.display = "block"; // Ensure forum is visible after auth state is determined
+
+            // Unsubscribe from previous snapshot listener if exists
+            if (unsubscribeSnapshot) {
+                unsubscribeSnapshot();
+            }
+
+            // (Re)subscribe to posts with current user context
+            const q = query(collection(db, "posts"), orderBy("timestamp", "asc"));
+            unsubscribeSnapshot = onSnapshot(q, renderPosts);
         });
 
-        if (isMobile) {
-            document.addEventListener('DOMContentLoaded', function() {
-                const postInputArea = document.querySelector('.post-input-area');
-                
+        postBtn.onclick = async () => {
+            if (currentUser && postText.value.trim() !== "") {
+                try {
+                    const hadFocus = document.activeElement === postText;
+                    
+                    await addDoc(collection(db, "posts"), {
+                        text: postText.value,
+                        username: currentUser.username,
+                        userId: currentUser.uid,
+                        timestamp: new Date(), // Initial timestamp
+                        edited: false
+                    });
+                    
+                    postText.value = "";
+                    
+                    if (hadFocus) {
+                        postText.focus();
+                    }
+                    
+                    // On mobile, ensure the view scrolls down correctly after posting
+                    if (isMobileDevice()) {
+                        setTimeout(() => {
+                            postsDiv.scrollTo({
+                                top: postsDiv.scrollHeight,
+                                behavior: 'smooth'
+                            });
+                        }, 100);
+                    }
+
+                } catch (err) {
+                    console.error("Error posting:", err);
+                }
+            }
+        };
+
+        // Format date and time
+        function formatDateTime(date) {
+            const today = new Date();
+            const yesterday = new Date(today);
+            yesterday.setDate(today.getDate() - 1);
+
+            if (isDifferentDay(date, today)) {
+                if (isDifferentDay(date, yesterday)) {
+                    // For dates before yesterday, show full date and time
+                    return date.toLocaleDateString('nl-NL', { year: 'numeric', month: 'short', day: 'numeric' }) + ' om ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                } else {
+                    // For yesterday
+                    return 'Gisteren om ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                }
+            } else {
+                // For today
+                return 'Vandaag om ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            }
+        }
+        
+        function isDifferentDay(date1, date2) {
+            return date1.getDate() !== date2.getDate() || 
+                   date1.getMonth() !== date2.getMonth() ||
+                   date1.getFullYear() !== date2.getFullYear();
+        }
+
+        async function editComment(postId, currentText) { // Removed originalTimestamp as it's not used in update
+            if (!currentUser) return;
+
+            const postElement = document.querySelector(`.post[data-id="${postId}"]`);
+            if (!postElement) return; // Exit if post element not found
+
+            const postContentDiv = postElement.querySelector('.post-content');
+            const postActionsDiv = postElement.querySelector('.post-actions');
+
+            const originalContent = postContentDiv.innerHTML; // Store original HTML to restore
+            const originalActions = postActionsDiv.innerHTML; // Store original HTML to restore
+
+            const editTextArea = document.createElement('textarea');
+            editTextArea.classList.add('editing-textarea');
+            editTextArea.value = currentText;
+            postContentDiv.innerHTML = '';
+            postContentDiv.appendChild(editTextArea);
+            editTextArea.focus(); // Focus the textarea for immediate editing
+
+            const saveBtn = document.createElement('button');
+            saveBtn.textContent = 'Opslaan';
+            saveBtn.style.color = '#f7a800';
+            saveBtn.style.borderColor = '#f7a800';
+            saveBtn.style.backgroundColor = 'transparent';
+            saveBtn.style.padding = '5px 10px';
+            saveBtn.style.borderRadius = '4px';
+            saveBtn.style.cursor = 'pointer';
+            saveBtn.style.fontSize = '0.8em';
+            saveBtn.onmouseover = () => { saveBtn.style.backgroundColor = '#f7a800'; saveBtn.style.color = '#121212'; };
+            saveBtn.onmouseout = () => { saveBtn.style.backgroundColor = 'transparent'; saveBtn.style.color = '#f7a800'; };
+
+            const cancelBtn = document.createElement('button');
+            cancelBtn.textContent = 'Annuleren';
+            cancelBtn.style.color = '#bbb';
+            cancelBtn.style.borderColor = '#bbb';
+            cancelBtn.style.backgroundColor = 'transparent';
+            cancelBtn.style.padding = '5px 10px';
+            cancelBtn.style.borderRadius = '4px';
+            cancelBtn.style.cursor = 'pointer';
+            cancelBtn.style.fontSize = '0.8em';
+            cancelBtn.onmouseover = () => { cancelBtn.style.backgroundColor = '#bbb'; cancelBtn.style.color = '#1e1e1e'; };
+            cancelBtn.onmouseout = () => { cancelBtn.style.backgroundColor = 'transparent'; cancelBtn.style.color = '#bbb'; };
+
+            postActionsDiv.innerHTML = '';
+            postActionsDiv.appendChild(saveBtn);
+            postActionsDiv.appendChild(cancelBtn);
+
+            saveBtn.onclick = async () => {
+                const updatedText = editTextArea.value.trim();
+                if (updatedText !== "" && updatedText !== currentText) {
+                    try {
+                        const postRef = doc(db, "posts", postId);
+                        await updateDoc(postRef, {
+                            text: updatedText,
+                            edited: true,
+                        });
+                    } catch (error) {
+                        console.error("Error updating document: ", error);
+                        alert("Fout bij het opslaan van de bewerking.");
+                    }
+                }
+                // Revert to original display (handled by onSnapshot listener which will redraw)
+                // If onSnapshot doesn't trigger, manually revert:
+                // postContentDiv.innerHTML = originalContent;
+                // postActionsDiv.innerHTML = originalActions;
+            };
+
+            cancelBtn.onclick = () => {
+                // Revert to original display (handled by onSnapshot listener which will redraw)
+                // If onSnapshot doesn't trigger, manually revert:
+                // postContentDiv.innerHTML = originalContent;
+                // postActionsDiv.innerHTML = originalActions;
+            };
+        }
+
+        async function deleteComment(postId) {
+            if (!currentUser) return;
+
+            if (confirm("Weet je zeker dat je deze comment wilt verwijderen?")) {
+                try {
+                    await deleteDoc(doc(db, "posts", postId));
+                } catch (error) {
+                    console.error("Error removing document: ", error);
+                    alert("Fout bij het verwijderen van de comment.");
+                }
+            }
+        }
+        
+        // Mobile layout adjustments
+        if (isMobileDevice()) {
+            // Adjust padding of #posts based on input area height on mobile
+            // This ensures comments don't get hidden behind the fixed input area
+            const adjustPostsPadding = () => {
+                const inputAreaHeight = postInputArea.offsetHeight;
+                postsDiv.style.paddingBottom = `${inputAreaHeight + 20}px`; // Add some extra margin
+            };
+
+            // Initial adjustment
+            adjustPostsPadding();
+
+            // Adjust on resize (e.g., keyboard appearing/disappearing)
+            window.addEventListener('resize', adjustPostsPadding);
+            window.addEventListener('orientationchange', adjustPostsPadding);
+
+            // Keep input area at bottom on focus
+            postText.addEventListener('focus', () => {
+                // For iOS, the keyboard might push the viewport up
+                // We want to make sure the input field stays visible
                 setTimeout(() => {
-                    postInputArea.style.position = 'fixed';
-                    postInputArea.style.bottom = '0';
-                    postInputArea.style.left = '0';
-                    postInputArea.style.right = '0';
-                    postInputArea.style.zIndex = '9999';
-                    
-                    document.body.style.height = window.innerHeight + 'px';
-                    
-                    window.scrollTo(0, 1);
-                }, 300);
+                    postInputArea.style.position = 'absolute'; // Change to absolute
+                    postInputArea.style.bottom = `${window.innerHeight - window.visualViewport.height}px`; // Adjust based on visual viewport
+                }, 300); // Small delay to allow keyboard to appear
             });
 
-            postText.addEventListener('focus', (e) => {
-                setTimeout(() => {
-                    const postInputArea = document.querySelector('.post-input-area');
-                    postInputArea.style.position = 'fixed';
-                    postInputArea.style.bottom = '0';
-                    
-                    if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-                        document.body.scrollTop = document.body.scrollHeight;
-                        window.scrollTo(0, document.body.scrollHeight);
-                    }
-                }, 300);
-            });
-            
-            window.addEventListener('resize', function() {
-                const postInputArea = document.querySelector('.post-input-area');
+            postText.addEventListener('blur', () => {
+                // Revert to fixed when keyboard closes
                 postInputArea.style.position = 'fixed';
                 postInputArea.style.bottom = '0';
-                postInputArea.style.zIndex = '9999';
             });
         }
+
 
         window.openSignInModal = () => {
             document.getElementById("signInModal").style.display = "flex";
