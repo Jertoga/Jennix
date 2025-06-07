@@ -57,8 +57,9 @@
             flex-grow: 1;
             overflow-y: auto; /* Only scrollbar for comments */
             overflow-x: hidden; /* Hide horizontal scrollbar */
-            margin-bottom: 0; /* No margin here, padding-bottom handles spacing */
-            padding-bottom: 15px; /* Default padding for desktop, adjusted by JS for mobile */
+            margin-bottom: 0; 
+            /* padding-bottom will be dynamically set by JS on mobile */
+            padding-bottom: 15px; /* Default for desktop */
         }
 
         /* Custom scrollbar styling for #posts */
@@ -279,19 +280,22 @@
 
         /* --- MOBILE SPECIFIC STYLES --- */
         @media (max-width: 600px) {
+            #forumSection {
+                max-width: 100%; /* Occupy full width */
+                padding: 10px; /* Padding for the sides */
+                box-sizing: border-box; /* Include padding in width */
+            }
+
             h2 { /* "Community Forum" title on mobile */
                 font-size: 1.5em; /* Smaller font size for mobile */
                 text-align: center;
-                margin-bottom: 15px; /* Adjust as needed */
-            }
-
-            #forumSection {
-                padding: 10px; /* Reduced overall padding for more space */
+                margin-bottom: 15px; 
             }
 
             #posts {
-                padding-bottom: 0; /* Will be dynamically set by JS */
-                margin-top: 0; /* Reset margin-top */
+                /* Height will be set by JS, no fixed padding-bottom here for dynamic calculation */
+                flex-grow: 1; /* Allow comments to take remaining height */
+                padding-bottom: 5px; /* Minimal padding to separate from input area */
             }
 
             .post-input-area {
@@ -748,12 +752,13 @@
         // --- Mobile Layout Adjustments (Further Improved) ---
         let visualViewportResizeListener = null;
 
-        const setupMobileLayout = () => {
+        const adjustForumLayout = () => {
             if (!isMobileDevice()) {
                 // Reset for desktop
                 postInputArea.style.position = 'sticky';
                 postInputArea.style.bottom = '0';
                 postsDiv.style.paddingBottom = '15px'; // Default desktop padding
+                postsDiv.style.maxHeight = 'unset'; // Reset max-height for desktop
                 postInputArea.style.display = 'block'; // Reset flexbox for desktop
                 postText.style.marginRight = '0'; // Reset margin for desktop
                 postBtn.style.width = '100%'; // Reset button width for desktop
@@ -776,13 +781,29 @@
             postInputArea.style.width = '100%';
             postInputArea.style.zIndex = '999';
 
-            // Initial padding adjustment for #posts (accounting for input area + a bit of margin)
-            const adjustPostsPadding = () => {
-                const inputAreaHeight = postInputArea.offsetHeight;
-                // Add a very small buffer (e.g., 5px)
-                postsDiv.style.paddingBottom = `${inputAreaHeight + 5}px`; 
+            // Calculate heights for dynamic layout
+            const headerHeight = document.querySelector('header').offsetHeight;
+            const h2Height = document.querySelector('h2').offsetHeight;
+            const forumSectionPaddingTop = parseFloat(getComputedStyle(forumSection).paddingTop);
+            const forumSectionPaddingBottom = parseFloat(getComputedStyle(forumSection).paddingBottom);
+            const inputAreaHeight = postInputArea.offsetHeight;
+
+            // Define a small buffer space between posts and the input area
+            const buffer = 5; 
+
+            // Function to set postsDiv max-height
+            const setPostsMaxHeight = (keyboardHeight = 0) => {
+                const availableHeight = window.innerHeight - headerHeight - h2Height - forumSectionPaddingTop - forumSectionPaddingBottom - inputAreaHeight - keyboardHeight - buffer;
+                postsDiv.style.maxHeight = `${Math.max(0, availableHeight)}px`; // Ensure it's not negative
+                // Scroll to bottom after height adjustment to keep last comment in view
+                postsDiv.scrollTo({
+                    top: postsDiv.scrollHeight,
+                    behavior: 'smooth'
+                });
             };
-            adjustPostsPadding(); // Run once on setup
+
+            // Initial setup for posts max-height (keyboard hidden)
+            setPostsMaxHeight(); 
 
             // Handle keyboard appearance for iOS/Android
             if (window.visualViewport) {
@@ -793,34 +814,27 @@
 
                 visualViewportResizeListener = () => {
                     const keyboardHeight = window.innerHeight - window.visualViewport.height;
-                    const inputAreaHeight = postInputArea.offsetHeight;
-
-                    if (keyboardHeight > 0) { 
-                        // Keyboard is open: set input area directly above keyboard, adjust posts padding
-                        postInputArea.style.bottom = `${keyboardHeight}px`;
-                        postsDiv.style.paddingBottom = `${inputAreaHeight + keyboardHeight + 5}px`; // Input area height + keyboard height + buffer
-                    } else { 
-                        // Keyboard is closed: reset input area to bottom, adjust posts padding for input area only
-                        postInputArea.style.bottom = '0';
-                        postsDiv.style.paddingBottom = `${inputAreaHeight + 5}px`; // Input area height + buffer
-                    }
                     
-                    // Attempt to scroll to the end of posts after keyboard adjustment
-                    // This is crucial to ensure the last comment is visible above the input area
-                    setTimeout(() => {
-                        postsDiv.scrollTo({
-                            top: postsDiv.scrollHeight,
-                            behavior: 'smooth'
-                        });
-                    }, 50);
+                    if (keyboardHeight > 0) { 
+                        // Keyboard is open
+                        postInputArea.style.bottom = `${keyboardHeight}px`;
+                        setPostsMaxHeight(keyboardHeight);
+                    } else { 
+                        // Keyboard is closed
+                        postInputArea.style.bottom = '0';
+                        setPostsMaxHeight(0); // Reset keyboard height to 0
+                    }
                 };
                 window.visualViewport.addEventListener('resize', visualViewportResizeListener);
             }
 
             // Fallback for devices without visualViewport (less precise)
+            // This relies more on the OS pushing content, and we just ensure
+            // the posts div tries to stay within bounds.
             postText.addEventListener('focus', () => {
                 if (!window.visualViewport) {
-                    // Try to scroll the posts div to ensure the input area and end of posts are visible
+                    // Try to re-calculate height and scroll on focus
+                    setPostsMaxHeight(); 
                     setTimeout(() => {
                         postsDiv.scrollTo({
                             top: postsDiv.scrollHeight,
@@ -834,15 +848,15 @@
                 if (!window.visualViewport) {
                     // Reset positions if visualViewport is not used
                     postInputArea.style.bottom = '0';
-                    adjustPostsPadding(); 
+                    setPostsMaxHeight(); 
                 }
             });
         };
 
         // Initial setup for mobile layout and on resize/orientationchange
-        document.addEventListener('DOMContentLoaded', setupMobileLayout);
-        window.addEventListener('resize', setupMobileLayout);
-        window.addEventListener('orientationchange', setupMobileLayout);
+        document.addEventListener('DOMContentLoaded', adjustForumLayout);
+        window.addEventListener('resize', adjustForumLayout);
+        window.addEventListener('orientationchange', adjustForumLayout);
 
 
         window.openSignInModal = () => {
