@@ -303,7 +303,7 @@
                 margin-bottom: 10px; /* Minimal bottom margin */
                 flex-shrink: 0; /* Prevent from shrinking */
                 padding: 0; /* Ensure no extra padding */
-                transition: transform 0.3s ease-out; /* Smooth transition for shifting */
+                transition: transform 0.3s ease-out, top 0.3s ease-out, background-color 0.3s ease; /* Smooth transition for shifting */
             }
 
             /* Class to move header out of view when keyboard is active */
@@ -850,8 +850,11 @@
                     // Header is hidden, h2 is shifted to top
                     spaceTakenAbovePosts = h2Height + h2MarginTop + h2MarginBottom; // h2 is fixed at top
                 } else {
-                    // Header is visible, h2 is below header
-                    spaceTakenAbovePosts = headerHeight + h2Height + h2MarginTop + h2MarginBottom;
+                    // Header is visible, h2 is below header (or default on initial load)
+                    // We need to get the "natural" height of the header if it's not hidden
+                    // Use getBoundingClientRect for accurate size including transforms if applied
+                    const actualHeaderHeight = mainHeader.getBoundingClientRect().height; 
+                    spaceTakenAbovePosts = actualHeaderHeight + h2Height + h2MarginTop + h2MarginBottom;
                 }
 
                 const calculatedHeight = availableScreenHeight 
