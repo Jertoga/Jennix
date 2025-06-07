@@ -308,7 +308,7 @@
             overflow: hidden;
             flex-grow: 1;
         }
-
+        
          #logoutBtn {
             display: none;
             position: absolute;
@@ -675,7 +675,7 @@
         // Import Firebase modules
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove, where, getDocs, increment } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDoc, onSnapshot, query, orderBy, doc, setDoc, updateDoc, arrayUnion, arrayRemove, where, getDocs, increment } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-firestore.js";
         import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-storage.js";
 
         // Firebase config
@@ -695,7 +695,7 @@
         const db = getFirestore(app);
         const storage = getStorage(app);
 
-        // DOM Elements
+        // DOM Elements for Gallery functionality
         const fileInput = document.getElementById('fileInput');
         const fileNameDisplay = document.getElementById('fileNameDisplay');
         const imagePreview = document.getElementById('imagePreview');
@@ -718,7 +718,6 @@
         const logoutBtn = document.getElementById('logoutBtn');
         const authButton = document.getElementById('authButton');
 
-        // Global state
         let currentUser = null;
         let currentMediaId = null;
         let currentSort = 'recent';
@@ -726,7 +725,7 @@
         let mediaItems = [];
         let userLikes = [];
 
-        // Auth state observer
+        // Auth state observer (enkel 1 observer, geen forum-specifieke code hier)
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 try {
@@ -738,17 +737,18 @@
                             username: userDoc.data().username
                         };
                     } else {
-                        // Handle case where user auth exists but not in users collection
                         currentUser = {
                             uid: user.uid,
                             email: user.email,
-                            username: "User" // Default
+                            username: "User" // Default fallback
                         };
                     }
                     
-                    // Enable upload functionality
+                    // Enable upload and comment functionality
                     captionText.disabled = false;
                     uploadBtn.disabled = false;
+                    commentInput.disabled = false;
+                    commentSubmit.disabled = false;
                     
                     // Get user likes
                     fetchUserLikes();
@@ -756,11 +756,6 @@
                     // Update UI for logged in user
                     logoutBtn.style.display = "inline-block";
                     authButton.classList.add('hidden');
-                    
-                    // Enable comment functionality
-                    commentInput.disabled = false;
-                    commentSubmit.disabled = false;
-                    
                 } catch (error) {
                     console.error("Error getting user data:", error);
                 }
@@ -768,24 +763,22 @@
                 currentUser = null;
                 userLikes = [];
                 
-                // Disable upload functionality
+                // Disable upload and comment functionality
                 captionText.disabled = true;
                 uploadBtn.disabled = true;
+                commentInput.disabled = true;
+                commentSubmit.disabled = true;
                 
                 // Update UI for logged out user
                 logoutBtn.style.display = "none";
                 authButton.classList.remove('hidden');
-                
-                // Disable comment functionality
-                commentInput.disabled = true;
-                commentSubmit.disabled = true;
             }
             
             // Load gallery content regardless of auth state
             loadGalleryContent();
         });
 
-         // Sign In
+        // Sign In
         signInForm.onsubmit = async (e) => {
             e.preventDefault();
             const email = document.getElementById("signInEmail").value;
@@ -830,32 +823,6 @@
             signOut(auth);
         };
 
- // Auth state observer
-        let currentUser = null;
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                const userDoc = await getDoc(doc(db, "users", user.uid));
-                currentUser = {
-                    ...user,
-                    username: userDoc.data().username
-                };
-                logoutBtn.style.display = "inline-block";
-                authButton.classList.add('hidden');
-                postText.disabled = false;
-                postText.placeholder = "Share something about Jenna...";
-                postBtn.disabled = false;
-            } else {
-                currentUser = null;
-                logoutBtn.style.display = "none";
-                authButton.classList.remove('hidden');
-                postText.disabled = true;
-                postText.placeholder = "Sign in to post a comment...";
-                postBtn.disabled = true;
-            }
-            forumSection.style.display = "block";
-        });
-
-        
         // File input change handler
         fileInput.addEventListener('change', () => {
             const file = fileInput.files[0];
@@ -869,7 +836,6 @@
                 
                 // Check file type and show appropriate preview
                 if (file.type.startsWith('image/')) {
-                    // Show image preview
                     const reader = new FileReader();
                     reader.onload = (e) => {
                         imagePreview.src = e.target.result;
@@ -877,23 +843,14 @@
                     };
                     reader.readAsDataURL(file);
                 } else if (file.type.startsWith('video/')) {
-                    // Show video preview
                     const url = URL.createObjectURL(file);
                     videoPreview.src = url;
                     videoPreview.classList.add('show');
-                }
-                
-                // Enable caption input if user is logged in
-                if (currentUser) {
-                    captionText.disabled = false;
-                    uploadBtn.disabled = false;
                 }
             } else {
                 fileNameDisplay.textContent = "No file selected";
                 imagePreview.classList.remove('show');
                 videoPreview.classList.remove('show');
-                
-                // Disable upload button
                 uploadBtn.disabled = true;
             }
         });
@@ -914,44 +871,33 @@
                 return;
             }
             
-            // Check file size (limit to 10MB)
             if (file.size > 10 * 1024 * 1024) {
                 alert("File size exceeds 10MB limit. Please choose a smaller file.");
                 return;
             }
             
-            // Show loading indicator
             loadingSpinner.style.display = 'block';
             uploadBtn.disabled = true;
             
             try {
-                // Create storage reference
                 const storageRef = ref(storage, `gallery/${currentUser.uid}/${Date.now()}_${file.name}`);
-                
-                // Upload file
                 const uploadTask = uploadBytesResumable(storageRef, file);
                 
-                // Listen for upload completion
                 uploadTask.on('state_changed', 
-                    // Progress function
                     (snapshot) => {
                         const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
                         console.log('Upload is ' + progress + '% done');
                     },
-                    // Error function
                     (error) => {
                         console.error("Upload failed:", error);
                         alert("Upload failed: " + error.message);
                         loadingSpinner.style.display = 'none';
                         uploadBtn.disabled = false;
                     },
-                    // Complete function
                     async () => {
                         try {
-                            // Get download URL
                             const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
                             
-                            // Add media entry to Firestore
                             await addDoc(collection(db, "gallery"), {
                                 userId: currentUser.uid,
                                 username: currentUser.username,
@@ -966,18 +912,15 @@
                                 comments: 0
                             });
                             
-                            // Reset form
                             fileInput.value = '';
                             fileNameDisplay.textContent = "No file selected";
                             captionText.value = '';
                             imagePreview.classList.remove('show');
                             videoPreview.classList.remove('show');
                             
-                            // Hide loading indicator
                             loadingSpinner.style.display = 'none';
                             uploadBtn.disabled = false;
                             
-                            // Reload gallery content
                             loadGalleryContent();
                             
                             alert("Upload successful!");
@@ -1003,10 +946,8 @@
             galleryGrid.innerHTML = '';
             
             try {
-                // Create query based on current sort and view
                 let q;
                 
-                // Base query on view type
                 if (currentView === 'photos') {
                     q = query(
                         collection(db, "gallery"),
@@ -1018,8 +959,6 @@
                         where("fileType", "==", "video")
                     );
                 } else if (currentView === 'liked' && currentUser) {
-                    // For liked view, we need to handle differently
-                    // First get the user's liked items
                     const likedItems = await Promise.all(
                         userLikes.map(async (id) => {
                             const docRef = doc(db, "gallery", id);
@@ -1031,10 +970,8 @@
                         })
                     );
                     
-                    // Filter out any null results and sort
                     mediaItems = likedItems.filter(item => item !== null);
                     
-                    // Sort the results
                     if (currentSort === 'recent') {
                         mediaItems.sort((a, b) => b.timestamp.toDate() - a.timestamp.toDate());
                     } else if (currentSort === 'popular') {
@@ -1043,16 +980,13 @@
                         mediaItems.sort((a, b) => b.views - a.views);
                     }
                     
-                    // Render the gallery
                     renderGallery();
                     loadingSpinner.style.display = 'none';
                     return;
                 } else {
-                    // All media
                     q = query(collection(db, "gallery"));
                 }
                 
-                // Add sorting
                 if (currentSort === 'recent') {
                     q = query(q, orderBy("timestamp", "desc"));
                 } else if (currentSort === 'popular') {
@@ -1061,7 +995,6 @@
                     q = query(q, orderBy("views", "desc"));
                 }
                 
-                // Get documents
                 const querySnapshot = await getDocs(q);
                 
                 mediaItems = [];
@@ -1069,7 +1002,6 @@
                     mediaItems.push({ id: doc.id, ...doc.data() });
                 });
                 
-                // Render the gallery
                 renderGallery();
                 
             } catch (error) {
@@ -1096,12 +1028,11 @@
                 galleryItem.classList.add('gallery-item');
                 galleryItem.dataset.id = item.id;
                 
-                // Check if it's image or video
                 if (item.fileType === 'image') {
                     const img = document.createElement('img');
                     img.src = item.fileURL;
                     img.alt = item.caption || 'Gallery image';
-                    img.loading = 'lazy'; // Lazy loading for better performance
+                    img.loading = 'lazy';
                     galleryItem.appendChild(img);
                 } else {
                     const video = document.createElement('video');
@@ -1109,14 +1040,12 @@
                     video.preload = 'metadata';
                     galleryItem.appendChild(video);
                     
-                    // Add play button overlay for videos
                     const playOverlay = document.createElement('div');
                     playOverlay.classList.add('play-overlay');
                     playOverlay.innerHTML = '▶';
                     galleryItem.appendChild(playOverlay);
                 }
                 
-                // Create overlay with info and actions
                 const overlay = document.createElement('div');
                 overlay.classList.add('gallery-item-overlay');
                 
@@ -1131,7 +1060,6 @@
                 likeBtn.classList.add('like-btn');
                 likeBtn.innerHTML = `<span>♡</span> <span>${item.likes || 0}</span>`;
                 
-                // Check if user has liked this item
                 if (currentUser && userLikes.includes(item.id)) {
                     likeBtn.classList.add('liked');
                     likeBtn.querySelector('span:first-child').textContent = '♥';
@@ -1149,22 +1077,18 @@
                 
                 galleryItem.appendChild(overlay);
                 
-                // Click handler to open modal
                 galleryItem.addEventListener('click', (e) => {
-                    // Don't open modal if clicking like or comment button
                     if (e.target.closest('.like-btn') || e.target.closest('.comment-btn')) {
                         return;
                     }
                     openMediaModal(item);
                 });
                 
-                // Like button handler
                 likeBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
                     toggleLike(item.id);
                 });
                 
-                // Comment button handler
                 commentBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
                     openMediaModal(item, true);
@@ -1178,20 +1102,17 @@
         async function openMediaModal(item, focusComments = false) {
             currentMediaId = item.id;
             
-            // Update media view count
             if (currentUser) {
                 await updateDoc(doc(db, "gallery", item.id), {
                     views: increment(1)
                 });
             }
             
-            // Update modal UI
             const modalTitle = document.querySelector('.modal-title');
             modalTitle.textContent = item.caption || 'Media Details';
             
             modalMediaContainer.innerHTML = '';
             
-            // Add media to modal
             if (item.fileType === 'image') {
                 const img = document.createElement('img');
                 img.src = item.fileURL;
@@ -1205,7 +1126,6 @@
                 modalMediaContainer.appendChild(video);
             }
             
-            // Update like button
             modalLikeBtn.querySelector('.like-count').textContent = item.likes || 0;
             
             if (currentUser && userLikes.includes(item.id)) {
@@ -1216,20 +1136,15 @@
                 modalLikeBtn.querySelector('.like-icon').textContent = '♡';
             }
             
-            // Update stats
             document.querySelector('.view-count').textContent = `${item.views || 0} views`;
             document.querySelector('.upload-date').textContent = formatDate(item.timestamp.toDate());
             
-            // Load comments
             loadComments(item.id);
             
-            // Show modal
             mediaModal.classList.add('show');
             
-            // Add modal like button handler
             modalLikeBtn.onclick = () => toggleLike(item.id);
             
-            // Focus comment input if requested
             if (focusComments && currentUser) {
                 commentInput.focus();
             }
@@ -1294,31 +1209,24 @@
                 return;
             }
             
-            const commentText = commentInput.value.trim();
-            if (!commentText) return;
+            const commentStr = commentInput.value.trim();
+            if (!commentStr) return;
             
             try {
-                // Add comment to database
                 await addDoc(collection(db, "comments"), {
                     mediaId: currentMediaId,
                     userId: currentUser.uid,
                     username: currentUser.username,
-                    text: commentText,
+                    text: commentStr,
                     timestamp: new Date()
                 });
                 
-                // Update comment count in media document
                 await updateDoc(doc(db, "gallery", currentMediaId), {
                     comments: increment(1)
                 });
                 
-                // Clear input
                 commentInput.value = '';
-                
-                // Reload comments
                 loadComments(currentMediaId);
-                
-                // Reload gallery to update comment counts
                 loadGalleryContent();
             } catch (error) {
                 console.error("Error adding comment:", error);
@@ -1337,11 +1245,9 @@
                 const mediaRef = doc(db, "gallery", mediaId);
                 const userRef = doc(db, "users", currentUser.uid);
                 
-                // Check if user has already liked this item
                 const hasLiked = userLikes.includes(mediaId);
                 
                 if (hasLiked) {
-                    // Unlike
                     await updateDoc(mediaRef, {
                         likes: increment(-1),
                         likedBy: arrayRemove(currentUser.uid)
@@ -1351,10 +1257,8 @@
                         likes: arrayRemove(mediaId)
                     });
                     
-                    // Update local state
                     userLikes = userLikes.filter(id => id !== mediaId);
                 } else {
-                    // Like
                     await updateDoc(mediaRef, {
                         likes: increment(1),
                         likedBy: arrayUnion(currentUser.uid)
@@ -1364,14 +1268,11 @@
                         likes: arrayUnion(mediaId)
                     });
                     
-                    // Update local state
                     userLikes.push(mediaId);
                 }
                 
-                // Update gallery and modal UI
                 loadGalleryContent();
                 
-                // If modal is open and showing this item, update like count
                 if (mediaModal.classList.contains('show') && currentMediaId === mediaId) {
                     modalLikeBtn.querySelector('.like-count').textContent = hasLiked ? 
                         parseInt(modalLikeBtn.querySelector('.like-count').textContent) - 1 :
@@ -1401,7 +1302,6 @@
             
             try {
                 const userDoc = await getDoc(doc(db, "users", currentUser.uid));
-                
                 if (userDoc.exists() && userDoc.data().likes) {
                     userLikes = userDoc.data().likes;
                 } else {
@@ -1416,52 +1316,34 @@
         // Sort and view button handlers
         sortButtons.forEach(btn => {
             btn.addEventListener('click', () => {
-                // Remove active class from all buttons
                 sortButtons.forEach(b => b.classList.remove('active'));
-                
-                // Add active class to clicked button
                 btn.classList.add('active');
-                
-                // Update current sort
                 currentSort = btn.dataset.sort;
-                
-                // Reload gallery content
                 loadGalleryContent();
             });
         });
         
         viewButtons.forEach(btn => {
             btn.addEventListener('click', () => {
-                // Check if user is logged in for "liked" view
                 if (btn.dataset.view === 'liked' && !currentUser) {
                     alert("Please sign in to view your liked media.");
                     return;
                 }
-                
-                // Remove active class from all buttons
                 viewButtons.forEach(b => b.classList.remove('active'));
-                
-                // Add active class to clicked button
                 btn.classList.add('active');
-                
-                // Update current view
                 currentView = btn.dataset.view;
-                
-                // Reload gallery content
                 loadGalleryContent();
             });
         });
 
-        // Close modal
         document.querySelector('.close-modal').addEventListener('click', () => {
             mediaModal.classList.remove('show');
             currentMediaId = null;
         });
 
-        // Format date helper
         function formatDate(date) {
             const now = new Date();
-            const diff = Math.floor((now - date) / 1000); // Difference in seconds
+            const diff = Math.floor((now - date) / 1000);
             
             if (diff < 60) {
                 return 'Just now';
@@ -1508,10 +1390,7 @@
             openSignInModal();
         };
 
-        // Initialize gallery
         document.addEventListener('DOMContentLoaded', () => {
-            // Initial gallery load will be triggered by auth state change
-            // Add click outside to close modals
             window.addEventListener('click', (e) => {
                 if (e.target === mediaModal) {
                     mediaModal.classList.remove('show');
