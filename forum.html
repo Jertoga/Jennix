@@ -287,17 +287,18 @@
             }
 
             h2 { /* "Community Forum" title on mobile */
-                font-size: 1.3em; /* Even smaller font size for mobile */
+                font-size: 1.2em; /* Even smaller font size for mobile */
                 text-align: center;
-                margin-top: 10px; /* Adjust as needed */
-                margin-bottom: 10px; /* Adjust as needed */
+                margin-top: 5px; /* Minimal top margin */
+                margin-bottom: 5px; /* Minimal bottom margin */
                 flex-shrink: 0; /* Prevent from shrinking */
+                padding: 0; /* Ensure no extra padding */
             }
 
             #posts {
-                /* Height will be set by JS, no fixed padding-bottom here for dynamic calculation */
+                /* Height will be set by JS */
                 flex-grow: 1; /* Allow comments to take remaining height */
-                /* padding-bottom: handled by JS to match post margin-bottom */
+                padding-bottom: 0; /* Initial padding, JS adds buffer based on post margin */
             }
 
             .post-input-area {
@@ -774,6 +775,8 @@
                 postBtn.style.width = '100%'; // Reset button width for desktop
                 postBtn.style.height = 'auto'; // Reset button height for desktop
                 communityForumH2.style.fontSize = '2em'; // Reset h2 font size
+                communityForumH2.style.marginTop = 'auto'; // Reset margins
+                communityForumH2.style.marginBottom = 'auto'; // Reset margins
                 mainHeader.classList.remove('header-hidden'); // Ensure header is visible
                 
                 // Remove visualViewport listener if it was added for mobile
@@ -797,19 +800,21 @@
 
             // Function to set postsDiv max-height
             const setPostsMaxHeight = (keyboardHeight = 0) => {
-                const headerRect = mainHeader.getBoundingClientRect();
-                const h2Rect = communityForumH2.getBoundingClientRect();
+                const h2Height = communityForumH2.offsetHeight;
                 const inputAreaHeight = postInputArea.offsetHeight;
+                const forumSectionPaddingTop = parseFloat(getComputedStyle(forumSection).paddingTop);
+                const forumSectionPaddingBottom = parseFloat(getComputedStyle(forumSection).paddingBottom);
 
-                // Available height for posts depends on keyboard state and header visibility
+
+                // Calculate available height for posts
                 let availableHeight;
                 if (keyboardHeight > 0) {
-                    // Keyboard is open: header is hidden, 'Community Forum' is at top
-                    // Calculate from top of visual viewport (which is where h2 will be)
-                    availableHeight = window.visualViewport.height - h2Rect.height - inputAreaHeight - keyboardHeight - buffer - parseFloat(getComputedStyle(forumSection).paddingTop) - parseFloat(getComputedStyle(forumSection).paddingBottom);
+                    // Keyboard is open: header is hidden, 'Community Forum' is at top of visual viewport
+                    availableHeight = window.visualViewport.height - h2Height - inputAreaHeight - keyboardHeight - buffer - forumSectionPaddingTop - forumSectionPaddingBottom;
                 } else {
                     // Keyboard is closed: header is visible
-                    availableHeight = window.innerHeight - headerRect.height - h2Rect.height - inputAreaHeight - buffer - parseFloat(getComputedStyle(forumSection).paddingTop) - parseFloat(getComputedStyle(forumSection).paddingBottom);
+                    const headerHeight = mainHeader.offsetHeight;
+                    availableHeight = window.innerHeight - headerHeight - h2Height - inputAreaHeight - buffer - forumSectionPaddingTop - forumSectionPaddingBottom;
                 }
                 
                 postsDiv.style.maxHeight = `${Math.max(0, availableHeight)}px`; 
