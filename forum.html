@@ -561,9 +561,10 @@
             
             // Only scroll to bottom if it was at the bottom OR if new content was added
             // This prevents unexpected jumps when editing existing content
+            // Also, scroll to bottom if initial load to show latest comment
             setTimeout(() => {
                 const newHeight = postsDiv.scrollHeight;
-                if (wasAtBottom || newHeight > oldHeight) { // Only scroll if it was at bottom or if content increased
+                if (wasAtBottom || newHeight > oldHeight || postsDiv.scrollTop === 0) { // Add postsDiv.scrollTop === 0 for initial load
                     postsDiv.scrollTo({
                         top: postsDiv.scrollHeight,
                         behavior: 'smooth'
@@ -869,9 +870,6 @@
                 });
             };
 
-            // Initial setup for posts height (keyboard closed)
-            setPostsHeight(); 
-
             // Handle keyboard appearance for iOS/Android using visualViewport
             if (window.visualViewport) {
                 // Remove existing listener to prevent duplicates
@@ -922,6 +920,9 @@
                     setPostsHeight(); 
                 }
             });
+            
+            // Initial call to setPostsHeight for correct layout on page load
+            setPostsHeight();
         };
 
         // Initial setup for mobile layout and on resize/orientationchange
