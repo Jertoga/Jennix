@@ -7,6 +7,34 @@
     <title>Jennix | Forum</title>
     <link rel="stylesheet" href="style.css" />
     <style>
+        /* Global body and html styling to prevent extra scrollbars */
+        html, body {
+            height: 100%;
+            margin: 0;
+            overflow: hidden; /* Prevent main scrollbars */
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            flex-shrink: 0; /* Prevent header from shrinking */
+        }
+
+        footer {
+            flex-shrink: 0; /* Prevent footer from shrinking */
+            margin-top: auto; /* Push footer to the bottom */
+        }
+
+        .content {
+            flex-grow: 1; /* Allow content to take available space */
+            overflow: hidden; /* Prevent scrollbar on main content area */
+            display: flex;
+            flex-direction: column;
+        }
+
         /* Additional Forum-Specific Styling */
         #forumSection {
             max-width: 800px;
@@ -14,27 +42,46 @@
             padding: 20px;
             display: flex;
             flex-direction: column;
-            height: 80vh;
-            overflow-x: hidden;
+            flex-grow: 1; /* Allow forum section to grow */
+            overflow: hidden; /* Prevent forumSection from having its own scrollbar */
         }
 
         /* Vernieuwde structuur voor mobiele focus */
         .forum-container {
             display: flex;
             flex-direction: column;
-            height: 100%;
+            height: 100%; /* Take full height of parent (#forumSection) */
         }
 
         #posts {
             background-color: transparent;
             padding: 0;
             flex-grow: 1;
-            overflow-y: auto;
-            overflow-x: hidden;
+            overflow-y: auto; /* Only scrollbar for comments */
+            overflow-x: hidden; /* Hide horizontal scrollbar */
             margin-bottom: 10px;
-            /* Minder padding voor beter aansluiten op input area */
             padding-bottom: 15px;
         }
+
+        /* Custom scrollbar styling for #posts */
+        #posts::-webkit-scrollbar {
+            width: 8px; /* Width of the scrollbar */
+        }
+
+        #posts::-webkit-scrollbar-track {
+            background: #2a2a2a; /* Color of the track */
+            border-radius: 4px;
+        }
+
+        #posts::-webkit-scrollbar-thumb {
+            background: #f7a800; /* Color of the scroll thumb */
+            border-radius: 4px;
+        }
+
+        #posts::-webkit-scrollbar-thumb:hover {
+            background: #e09700; /* Color of the scroll thumb on hover */
+        }
+
 
         .post-input-area {
             position: sticky;
@@ -48,6 +95,7 @@
             border-top: 1px solid #333;
             box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
             box-sizing: border-box;
+            flex-shrink: 0; /* Prevent input area from shrinking */
         }
 
         #postText {
@@ -77,7 +125,7 @@
 
         #postBtn {
             width: 100%;
-            margin-bottom: 0; /* Minder ruimte onderaan op mobiel */
+            margin-bottom: 0;
         }
 
         #postBtn:disabled {
@@ -95,7 +143,7 @@
             transition: background-color 0.3s ease;
             width: 100%;
             box-sizing: border-box;
-            position: relative; /* Added for absolute positioning of edit/delete buttons */
+            position: relative;
         }
 
         .post-header {
@@ -130,7 +178,7 @@
             display: flex;
             gap: 10px;
             margin-top: 10px;
-            justify-content: flex-end; /* Align actions to the right */
+            justify-content: flex-end;
         }
 
         .post-actions button {
@@ -239,7 +287,7 @@
             }
 
             #forumSection {
-                height: calc(100vh - 120px);
+                height: calc(100vh - 120px); /* Adjust height for mobile header/footer */
                 padding: 15px 10px;
                 overflow: hidden;
                 position: relative;
@@ -252,7 +300,7 @@
             }
 
             #posts {
-                padding-bottom: 90px; /* Minder ruimte zodat berichten dichter bij input area staan */
+                padding-bottom: 90px;
                 height: 100%;
                 position: relative;
             }
@@ -266,10 +314,8 @@
                 margin: 0 auto;
                 padding: 10px;
                 z-index: 999;
-                /* Achtergrond matchen met pagina */
                 background-color: #181818;
                 border-top: 1px solid #333;
-                /* Belangrijke viewport setting om boven keyboard te blijven */
                 transform: translateZ(0);
             }
 
@@ -280,7 +326,7 @@
 
             #postBtn {
                 margin-bottom: 5px;
-                height: 40px; /* Vastgestelde hoogte voor de knop */
+                height: 40px;
             }
         }
     </style>
@@ -382,40 +428,28 @@
         const postText = document.getElementById("postText");
         const postsDiv = document.getElementById("posts");
 
-        // Detecteer mobiele apparaten voor specifieke aanpassingen
         const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth <= 600;
 
-        // Aanpassing layout voor mobiel
         function adjustLayoutForMobile() {
             if (isMobile) {
                 postText.style.minHeight = "60px";
-                
                 const postInputArea = document.querySelector('.post-input-area');
                 postInputArea.style.position = 'fixed';
-                
                 window.scrollTo(0, 1);
-                
                 document.body.style.height = window.innerHeight + 'px';
-                
                 postInputArea.style.bottom = '0';
-                
                 postsDiv.style.paddingBottom = "90px";
             }
         }
 
-        // Roep direct aan bij laden
         adjustLayoutForMobile();
-        
-        // Ook aanroepen bij resize en orientatieverandering
         window.addEventListener('resize', adjustLayoutForMobile);
         window.addEventListener('orientationchange', adjustLayoutForMobile);
 
-        // Sign In
         signInForm.onsubmit = async (e) => {
             e.preventDefault();
             const email = document.getElementById("signInEmail").value;
             const password = document.getElementById("signInPassword").value;
-            
             try {
                 await signInWithEmailAndPassword(auth, email, password);
                 closeSignInModal();
@@ -424,7 +458,6 @@
             }
         };
 
-        // Sign Up
         signUpForm.onsubmit = async (e) => {
             e.preventDefault();
             const username = document.getElementById("signUpUsername").value.trim();
@@ -450,12 +483,10 @@
             }
         };
 
-        // Log out
         logoutBtn.onclick = () => {
             signOut(auth);
         };
 
-        // Auth state observer
         let currentUser = null;
         onAuthStateChanged(auth, async (user) => {
             if (user) {
@@ -480,7 +511,6 @@
             forumSection.style.display = "block";
         });
 
-        // Post - met verbeterde focus handling
         postBtn.onclick = async () => {
             if (currentUser && postText.value.trim() !== "") {
                 try {
@@ -489,9 +519,9 @@
                     await addDoc(collection(db, "posts"), {
                         text: postText.value,
                         username: currentUser.username,
-                        userId: currentUser.uid, // Store user ID
-                        timestamp: new Date(),
-                        edited: false // New field to track if edited
+                        userId: currentUser.uid,
+                        timestamp: new Date(), // Initial timestamp
+                        edited: false
                     });
                     
                     postText.value = "";
@@ -517,40 +547,37 @@
 
             if (isDifferentDay(date, today)) {
                 if (isDifferentDay(date, yesterday)) {
+                    // For dates before yesterday, show full date and time
                     return date.toLocaleDateString('nl-NL', { year: 'numeric', month: 'short', day: 'numeric' }) + ' om ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                 } else {
+                    // For yesterday
                     return 'Gisteren om ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                 }
             } else {
+                // For today
                 return 'Vandaag om ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             }
         }
         
-        // Check for different day
         function isDifferentDay(date1, date2) {
             return date1.getDate() !== date2.getDate() || 
                    date1.getMonth() !== date2.getMonth() ||
                    date1.getFullYear() !== date2.getFullYear();
         }
 
-        // --- Comment Edit and Delete Logic ---
-
-        // Function to handle editing a comment
-        async function editComment(postId, currentText) {
+        async function editComment(postId, currentText, originalTimestamp) {
             if (!currentUser) return;
 
             const postElement = document.querySelector(`.post[data-id="${postId}"]`);
             const postContentDiv = postElement.querySelector('.post-content');
             const postActionsDiv = postElement.querySelector('.post-actions');
 
-            // Create an editable textarea
             const editTextArea = document.createElement('textarea');
             editTextArea.classList.add('editing-textarea');
             editTextArea.value = currentText;
-            postContentDiv.innerHTML = ''; // Clear original content
+            postContentDiv.innerHTML = '';
             postContentDiv.appendChild(editTextArea);
 
-            // Create Save and Cancel buttons
             const saveBtn = document.createElement('button');
             saveBtn.textContent = 'Opslaan';
             saveBtn.style.color = '#f7a800';
@@ -560,10 +587,8 @@
             saveBtn.style.borderRadius = '4px';
             saveBtn.style.cursor = 'pointer';
             saveBtn.style.fontSize = '0.8em';
-            saveBtn.style.transition = 'background-color 0.3s ease, color 0.3s ease';
             saveBtn.onmouseover = () => { saveBtn.style.backgroundColor = '#f7a800'; saveBtn.style.color = '#121212'; };
             saveBtn.onmouseout = () => { saveBtn.style.backgroundColor = 'transparent'; saveBtn.style.color = '#f7a800'; };
-
 
             const cancelBtn = document.createElement('button');
             cancelBtn.textContent = 'Annuleren';
@@ -574,11 +599,9 @@
             cancelBtn.style.borderRadius = '4px';
             cancelBtn.style.cursor = 'pointer';
             cancelBtn.style.fontSize = '0.8em';
-            cancelBtn.style.transition = 'background-color 0.3s ease, color 0.3s ease';
             cancelBtn.onmouseover = () => { cancelBtn.style.backgroundColor = '#bbb'; cancelBtn.style.color = '#1e1e1e'; };
             cancelBtn.onmouseout = () => { cancelBtn.style.backgroundColor = 'transparent'; cancelBtn.style.color = '#bbb'; };
 
-            // Hide original actions and add new ones
             postActionsDiv.innerHTML = '';
             postActionsDiv.appendChild(saveBtn);
             postActionsDiv.appendChild(cancelBtn);
@@ -590,15 +613,14 @@
                         const postRef = doc(db, "posts", postId);
                         await updateDoc(postRef, {
                             text: updatedText,
-                            edited: true, // Mark as edited
-                            timestamp: new Date() // Update timestamp to re-sort if desired or show "last edited"
+                            edited: true,
+                            // Do NOT update timestamp here to keep original posting time
                         });
                     } catch (error) {
                         console.error("Error updating document: ", error);
                         alert("Fout bij het opslaan van de bewerking.");
                     }
                 }
-                // Revert to original display (handled by onSnapshot listener)
             };
 
             cancelBtn.onclick = () => {
@@ -606,7 +628,6 @@
             };
         }
 
-        // Function to handle deleting a comment
         async function deleteComment(postId) {
             if (!currentUser) return;
 
@@ -620,7 +641,6 @@
             }
         }
         
-        // Show posts met verbeterde vloeiende scrolling
         const q = query(collection(db, "posts"), orderBy("timestamp", "asc"));
         onSnapshot(q, snapshot => {
             let lastDate = null;
@@ -630,10 +650,10 @@
             
             postsDiv.innerHTML = "";
             
-            snapshot.forEach(docSnapshot => { // Renamed doc to docSnapshot to avoid conflict with top-level doc
+            snapshot.forEach(docSnapshot => {
                 const postData = docSnapshot.data();
-                const postId = docSnapshot.id; // Get the document ID for editing/deleting
-                const postDate = postData.timestamp.toDate();
+                const postId = docSnapshot.id;
+                const postDate = postData.timestamp.toDate(); // This is the original posting timestamp
                 const now = new Date();
 
                 if (!lastDate || isDifferentDay(postDate, lastDate)) {
@@ -646,7 +666,7 @@
                 
                 const postDiv = document.createElement("div");
                 postDiv.classList.add("post");
-                postDiv.dataset.id = postId; // Store the document ID
+                postDiv.dataset.id = postId;
                 
                 const postHeader = document.createElement("div");
                 postHeader.classList.add("post-header");
@@ -655,7 +675,7 @@
                 usernameSpan.textContent = postData.username;
                 
                 const timestampSpan = document.createElement("span");
-                timestampSpan.textContent = formatDateTime(postDate);
+                timestampSpan.textContent = formatDateTime(postDate); // Display the original timestamp
                 
                 postHeader.appendChild(usernameSpan);
                 postHeader.appendChild(timestampSpan);
@@ -664,18 +684,16 @@
                 postContent.classList.add("post-content");
                 postContent.textContent = postData.text;
 
-                // Add edited indicator if applicable
                 if (postData.edited) {
                     const editedIndicator = document.createElement('span');
                     editedIndicator.classList.add('edited-indicator');
                     editedIndicator.textContent = '(Bewerkt)';
-                    timestampSpan.appendChild(editedIndicator); // Append to timestamp span
+                    timestampSpan.appendChild(editedIndicator);
                 }
                 
                 postDiv.appendChild(postHeader);
                 postDiv.appendChild(postContent);
 
-                // Add edit and delete buttons if the current user is the author and within time limits
                 if (currentUser && currentUser.uid === postData.userId) {
                     const postActions = document.createElement('div');
                     postActions.classList.add('post-actions');
@@ -683,17 +701,15 @@
                     const timeElapsedEdit = (now.getTime() - postDate.getTime()) / (1000 * 60); // minutes
                     const timeElapsedDelete = (now.getTime() - postDate.getTime()) / (1000 * 60 * 60); // hours
 
-                    // Edit button
                     const editButton = document.createElement('button');
                     editButton.textContent = 'Bewerken';
-                    editButton.disabled = timeElapsedEdit > 15; // Enable for 15 minutes
-                    editButton.onclick = () => editComment(postId, postData.text);
+                    editButton.disabled = timeElapsedEdit > 15;
+                    editButton.onclick = () => editComment(postId, postData.text, postDate); // Pass original timestamp
                     postActions.appendChild(editButton);
 
-                    // Delete button
                     const deleteButton = document.createElement('button');
                     deleteButton.textContent = 'Verwijderen';
-                    deleteButton.disabled = timeElapsedDelete > 1; // Enable for 1 hour
+                    deleteButton.disabled = timeElapsedDelete > 1;
                     deleteButton.onclick = () => deleteComment(postId);
                     postActions.appendChild(deleteButton);
 
@@ -718,7 +734,6 @@
             }, 50);
         });
 
-        // Verbeterde input handling voor mobiel
         if (isMobile) {
             document.addEventListener('DOMContentLoaded', function() {
                 const postInputArea = document.querySelector('.post-input-area');
@@ -757,7 +772,6 @@
             });
         }
 
-        // Modals
         window.openSignInModal = () => {
             document.getElementById("signInModal").style.display = "flex";
         };
