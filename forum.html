@@ -289,8 +289,7 @@
                 max-width: 100%; /* Occupy full width */
                 padding: 10px; /* Padding for the sides */
                 box-sizing: border-box; /* Include padding in width */
-                /* Take full height of the screen minus the footer (if visible) */
-                height: 100%; 
+                height: 100%; /* Take full height of the screen */
             }
 
             h2 { /* "Community Forum" title on mobile */
@@ -300,6 +299,7 @@
                 margin-bottom: 10px; /* Minimal bottom margin */
                 flex-shrink: 0; /* Prevent from shrinking */
                 padding: 0; /* Ensure no extra padding */
+                display: none; /* Hidden by default on mobile, shown by JS when keyboard active */
             }
 
             #posts {
@@ -768,10 +768,12 @@
             if (!isMobileDevice()) {
                 // Reset for desktop
                 mainHeader.style.display = 'block'; // Show header on desktop
+                communityForumH2.style.display = 'block'; // Show h2 on desktop
                 postInputArea.style.position = 'sticky';
                 postInputArea.style.bottom = '0';
                 postsDiv.style.paddingBottom = '15px'; // Default desktop padding
-                postsDiv.style.maxHeight = 'unset'; // Reset max-height for desktop
+                postsDiv.style.height = 'auto'; // Reset height for desktop to let flex-grow handle it
+                postsDiv.style.maxHeight = 'unset'; // Remove max-height constraint
                 postInputArea.style.display = 'block'; // Reset flexbox for desktop
                 postText.style.marginRight = '0'; // Reset margin for desktop
                 postBtn.style.width = '100%'; // Reset button width for desktop
@@ -779,7 +781,6 @@
                 communityForumH2.style.fontSize = '2em'; // Reset h2 font size for desktop
                 communityForumH2.style.marginTop = 'auto'; // Reset margins
                 communityForumH2.style.marginBottom = 'auto'; // Reset margins
-                postsDiv.style.height = 'auto'; // Reset height for desktop to let flex-grow handle it
 
                 // Remove visualViewport listener if it was added for mobile
                 if (window.visualViewport && visualViewportResizeListener) {
@@ -791,6 +792,7 @@
 
             // Mobile Specific Logic
             mainHeader.style.display = 'none'; // Hide header completely on mobile
+            // h2 display is controlled by keyboard activation
 
             // Apply fixed position for mobile input area
             postInputArea.style.position = 'fixed';
@@ -806,8 +808,10 @@
             // Function to set postsDiv height based on available screen space
             const setPostsHeight = () => {
                 const h2Height = communityForumH2.offsetHeight;
-                const h2MarginTop = parseFloat(getComputedStyle(communityForumH2).marginTop);
-                const h2MarginBottom = parseFloat(getComputedStyle(communityForumH2).marginBottom);
+                const h2Style = getComputedStyle(communityForumH2);
+                const h2MarginTop = parseFloat(h2Style.marginTop);
+                const h2MarginBottom = parseFloat(h2Style.marginBottom);
+
                 const inputAreaHeight = postInputArea.offsetHeight;
                 const forumSectionPaddingTop = parseFloat(getComputedStyle(forumSection).paddingTop);
                 const forumSectionPaddingBottom = parseFloat(getComputedStyle(forumSection).paddingBottom);
@@ -815,8 +819,13 @@
                 // Use visualViewport.height when keyboard is open, otherwise window.innerHeight
                 const availableScreenHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
 
+                let h2Space = 0;
+                if (communityForumH2.style.display === 'block') { // Only add h2 height if it's visible
+                    h2Space = h2Height + h2MarginTop + h2MarginBottom;
+                }
+
                 const calculatedHeight = availableScreenHeight 
-                                        - (h2Height + h2MarginTop + h2MarginBottom) 
+                                        - h2Space 
                                         - (inputAreaHeight + buffer)
                                         - forumSectionPaddingTop 
                                         - forumSectionPaddingBottom;
@@ -841,31 +850,35 @@
                 }
 
                 visualViewportResizeListener = () => {
-                    // This listener will re-calculate height based on visualViewport.height
+                    const keyboardHeight = window.innerHeight - window.visualViewport.height;
+                    
+                    if (keyboardHeight > 0) { 
+                        // Keyboard is open
+                        communityForumH2.style.display = 'block'; // Show "Community Forum"
+                    } else { 
+                        // Keyboard is closed
+                        communityForumH2.style.display = 'none'; // Hide "Community Forum"
+                    }
+                    // Recalculate height based on current viewport and h2 visibility
                     setPostsHeight(); 
-                    // No need to adjust postInputArea.bottom here, as it's already fixed at bottom:0
-                    // and visualViewport resize naturally pushes it up/down.
                 };
                 window.visualViewport.addEventListener('resize', visualViewportResizeListener);
             }
 
             // Fallback for devices without visualViewport (less precise, might show slight scroll issues)
             // This relies on the OS pushing content. We just ensure the posts div adapts.
-            // On focus/blur might trigger a re-calculation.
             postText.addEventListener('focus', () => {
                 if (!window.visualViewport) {
+                    communityForumH2.style.display = 'block'; // Show on focus
                     setPostsHeight(); // Recalculate on focus
-                    setTimeout(() => {
-                        postsDiv.scrollTo({
-                            top: postsDiv.scrollHeight,
-                            behavior: 'smooth'
-                        });
-                    }, 50);
+                    // Use scrollIntoView to bring textarea to top of keyboard
+                    postText.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }
             });
 
             postText.addEventListener('blur', () => {
                 if (!window.visualViewport) {
+                    communityForumH2.style.display = 'none'; // Hide on blur
                     setPostsHeight(); // Recalculate on blur
                 }
             });
