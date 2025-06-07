@@ -332,7 +332,7 @@
             #posts {
                 /* Height will be calculated by JS based on available space */
                 flex-grow: 1; /* Allow comments to take remaining height */
-                padding-bottom: 15px; /* Ensure 15px space above input area */
+                /* padding-bottom will be handled by JS to dynamically adjust */
                 box-sizing: border-box; /* Include padding in height calculation */
             }
 
@@ -559,20 +559,30 @@
                 postsDiv.appendChild(postDiv);
             });
             
-            // Only scroll to bottom if it was at the bottom OR if new content was added
-            // This prevents unexpected jumps when editing existing content
-            // Also, scroll to bottom if initial load to show latest comment
-            setTimeout(() => {
+            // On desktop, ensure there's enough padding at the bottom so the last comment isn't hidden
+            if (!isMobileDevice()) {
+                // Calculate minimum padding needed for last comment to be above sticky input area
+                const minPaddingForLastComment = postInputArea.offsetHeight + 30; // 30px is a bit of buffer
+                postsDiv.style.paddingBottom = `${minPaddingForLastComment}px`;
+            } else {
+                // Reset for mobile, as dynamic height calculation handles it
+                postsDiv.style.paddingBottom = `15px`; // Original mobile padding
+            }
+
+
+            // Scroll logic after rendering:
+            // Scroll to bottom if it was already at the bottom, or if content increased, or if it's the initial load (scrollTop is 0)
+            setTimeout(() => { // Added a small delay to ensure rendering is complete
                 const newHeight = postsDiv.scrollHeight;
-                if (wasAtBottom || newHeight > oldHeight || postsDiv.scrollTop === 0) { // Add postsDiv.scrollTop === 0 for initial load
+                if (wasAtBottom || newHeight > oldHeight || postsDiv.scrollTop === 0) { 
                     postsDiv.scrollTo({
                         top: postsDiv.scrollHeight,
                         behavior: 'smooth'
                     });
-                } else if (newHeight < oldHeight) { // If content shrunk, try to maintain relative position
+                } else if (newHeight < oldHeight) { 
                     postsDiv.scrollTop = currentScrollTop; 
                 }
-            }, 50);
+            }, 100); // Increased delay
         }
 
         signInForm.onsubmit = async (e) => {
@@ -646,7 +656,11 @@
 
             // (Re)subscribe to posts with current user context
             const q = query(collection(db, "posts"), orderBy("timestamp", "asc"));
-            unsubscribeSnapshot = onSnapshot(q, renderPosts);
+            unsubscribeSnapshot = onSnapshot(q, (snapshot) => {
+                renderPosts(snapshot);
+                // After posts are rendered and potential scroll, adjust layout for mobile
+                adjustForumLayout(); 
+            });
         });
 
         postBtn.onclick = async () => {
@@ -802,7 +816,7 @@
                 communityForumH2.style.marginBottom = 'auto'; /* Reset margins */
                 postInputArea.style.position = 'sticky';
                 postInputArea.style.bottom = '0';
-                postsDiv.style.paddingBottom = '15px'; /* Default desktop padding */
+                // Handled in renderPosts for desktop: postsDiv.style.paddingBottom = '15px'; /* Default desktop padding */
                 postsDiv.style.height = 'auto'; /* Reset height for desktop to let flex-grow handle it */
                 postsDiv.style.maxHeight = 'unset'; /* Remove max-height constraint */
                 postInputArea.style.display = 'block'; /* Reset flexbox for desktop */
@@ -849,7 +863,7 @@
                 let spaceTakenAbovePosts = 0;
                 if (mainHeader.classList.contains('header-hidden')) {
                     // Header is hidden, h2 is shifted to top
-                    spaceTakenAbovePosts = h2Height + h2MarginTop + h2MarginBottom; // h2 is fixed at top and takes its own space
+                    spaceTakenAbovePosts = h2Height + h2MarginTop + h2MarginBottom; 
                 } else {
                     // Header is visible, h2 is below header
                     spaceTakenAbovePosts = headerHeight + h2Height + h2MarginTop + h2MarginBottom;
@@ -886,7 +900,6 @@
                         communityForumH2.classList.add('h2-shifted-mobile'); // Shift "Community Forum" to top
                         
                         // Scroll the input area into view *after* layout has settled
-                        // Use a slight delay to allow the browser to adjust
                         setTimeout(() => {
                             postInputArea.scrollIntoView({ behavior: 'smooth', block: 'end' });
                         }, 50); 
@@ -921,7 +934,8 @@
                 }
             });
             
-            // Initial call to setPostsHeight for correct layout on page load
+            // Initial call to setPostsHeight for correct layout on page load.
+            // This is crucial for non-visualViewport devices and ensures correct initial scroll position.
             setPostsHeight();
         };
 
