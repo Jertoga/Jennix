@@ -289,14 +289,18 @@
 
             #forumSection {
                 padding: 15px 10px;
+                /* On smaller screens, the forum section should take up available space,
+                   but its internal content (#posts) will handle scrolling. */
             }
 
             #posts {
-                padding-bottom: 120px; /* Increased padding to ensure input area doesn't cover last posts */
+                padding-bottom: 160px; /* Increased padding to ensure input area doesn't cover last posts */
+                /* This padding should be large enough to account for the input area + keyboard.
+                   It's a balance between preventing overlap and not having too much empty space. */
             }
 
             .post-input-area {
-                position: fixed; /* Keep it fixed at the bottom */
+                position: fixed; /* Always fixed at the bottom unless JS adjusts for keyboard */
                 bottom: 0;
                 left: 0;
                 right: 0;
@@ -490,7 +494,7 @@
                     const editButton = document.createElement('button');
                     editButton.textContent = 'Bewerken';
                     editButton.disabled = timeElapsedEdit > 15;
-                    editButton.onclick = () => editComment(postId, postData.text, postDate);
+                    editButton.onclick = () => editComment(postId, postData.text);
                     postActions.appendChild(editButton);
 
                     const deleteButton = document.createElement('button');
@@ -516,8 +520,7 @@
                     });
                 } else if (heightDiff > 0 && !wasAtBottom) {
                     // Only adjust if the scroll position is within the new content
-                    // To prevent jumping if new content is added far above the current scroll position
-                    postsDiv.scrollTop = currentScrollTop + heightDiff;
+                    postsDiv.scrollTop = currentScrollTop;
                 }
             }, 50);
         }
@@ -657,22 +660,23 @@
                    date1.getFullYear() !== date2.getFullYear();
         }
 
-        async function editComment(postId, currentText) { // Removed originalTimestamp as it's not used in update
+        async function editComment(postId, currentText) { 
             if (!currentUser) return;
 
             const postElement = document.querySelector(`.post[data-id="${postId}"]`);
-            if (!postElement) return; // Exit if post element not found
+            if (!postElement) return;
 
             const postContentDiv = postElement.querySelector('.post-content');
             const postActionsDiv = postElement.querySelector('.post-actions');
 
-            const originalContent = postContentDiv.innerHTML; // Store original HTML to restore
-            const originalActions = postActionsDiv.innerHTML; // Store original HTML to restore
+            // Store original content and actions for potential manual revert (though onSnapshot usually handles it)
+            const originalContentHtml = postContentDiv.innerHTML;
+            const originalActionsHtml = postActionsDiv.innerHTML;
 
             const editTextArea = document.createElement('textarea');
             editTextArea.classList.add('editing-textarea');
             editTextArea.value = currentText;
-            postContentDiv.innerHTML = '';
+            postContentDiv.innerHTML = ''; // Clear content
             postContentDiv.appendChild(editTextArea);
             editTextArea.focus(); // Focus the textarea for immediate editing
 
@@ -700,7 +704,7 @@
             cancelBtn.onmouseover = () => { cancelBtn.style.backgroundColor = '#bbb'; cancelBtn.style.color = '#1e1e1e'; };
             cancelBtn.onmouseout = () => { cancelBtn.style.backgroundColor = 'transparent'; cancelBtn.style.color = '#bbb'; };
 
-            postActionsDiv.innerHTML = '';
+            postActionsDiv.innerHTML = ''; // Clear actions
             postActionsDiv.appendChild(saveBtn);
             postActionsDiv.appendChild(cancelBtn);
 
@@ -718,17 +722,11 @@
                         alert("Fout bij het opslaan van de bewerking.");
                     }
                 }
-                // Revert to original display (handled by onSnapshot listener which will redraw)
-                // If onSnapshot doesn't trigger, manually revert:
-                // postContentDiv.innerHTML = originalContent;
-                // postActionsDiv.innerHTML = originalActions;
+                // The onSnapshot listener will re-render the post with the updated content/actions
             };
 
             cancelBtn.onclick = () => {
-                // Revert to original display (handled by onSnapshot listener which will redraw)
-                // If onSnapshot doesn't trigger, manually revert:
-                // postContentDiv.innerHTML = originalContent;
-                // postActionsDiv.innerHTML = originalActions;
+                // The onSnapshot listener will re-render the post, effectively canceling the edit
             };
         }
 
@@ -745,38 +743,100 @@
             }
         }
         
-        // Mobile layout adjustments
-        if (isMobileDevice()) {
+        // --- Mobile Layout Adjustments (Improved) ---
+        const setupMobileLayout = () => {
+            if (!isMobileDevice()) {
+                // Reset for desktop if applicable
+                postInputArea.style.position = 'sticky';
+                postInputArea.style.bottom = '0';
+                postsDiv.style.paddingBottom = '15px'; // Default desktop padding
+                return;
+            }
+
+            // Apply fixed position for mobile by default
+            postInputArea.style.position = 'fixed';
+            postInputArea.style.bottom = '0';
+            postInputArea.style.left = '0';
+            postInputArea.style.right = '0';
+            postInputArea.style.width = '100%';
+            postInputArea.style.zIndex = '999';
+
             // Adjust padding of #posts based on input area height on mobile
             // This ensures comments don't get hidden behind the fixed input area
             const adjustPostsPadding = () => {
                 const inputAreaHeight = postInputArea.offsetHeight;
-                postsDiv.style.paddingBottom = `${inputAreaHeight + 20}px`; // Add some extra margin
+                // Add some extra margin. This value might need fine-tuning.
+                postsDiv.style.paddingBottom = `${inputAreaHeight + 20}px`; 
             };
 
-            // Initial adjustment
+            // Initial adjustment and on resize
             adjustPostsPadding();
-
-            // Adjust on resize (e.g., keyboard appearing/disappearing)
+            window.removeEventListener('resize', adjustPostsPadding); // Remove old listener first
+            window.removeEventListener('orientationchange', adjustPostsPadding);
             window.addEventListener('resize', adjustPostsPadding);
             window.addEventListener('orientationchange', adjustPostsPadding);
 
-            // Keep input area at bottom on focus
+
+            // Handle keyboard appearance for iOS/Android
+            let initialViewportHeight = window.innerHeight;
+
             postText.addEventListener('focus', () => {
-                // For iOS, the keyboard might push the viewport up
-                // We want to make sure the input field stays visible
-                setTimeout(() => {
-                    postInputArea.style.position = 'absolute'; // Change to absolute
-                    postInputArea.style.bottom = `${window.innerHeight - window.visualViewport.height}px`; // Adjust based on visual viewport
-                }, 300); // Small delay to allow keyboard to appear
+                // Use visualViewport if available (better for dynamic keyboard sizing)
+                if (window.visualViewport) {
+                    const handleViewportChange = () => {
+                        const keyboardHeight = initialViewportHeight - window.visualViewport.height;
+                        if (keyboardHeight > 0) { // Keyboard is open
+                            postInputArea.style.bottom = `${keyboardHeight}px`;
+                            postsDiv.style.paddingBottom = `${postInputArea.offsetHeight + keyboardHeight + 20}px`;
+                        } else { // Keyboard is closed (e.g., if re-focused)
+                            postInputArea.style.bottom = '0';
+                            adjustPostsPadding(); // Re-adjust for fixed input area
+                        }
+                        // Scroll to bottom of posts after keyboard appears, to ensure input area is visible
+                        setTimeout(() => {
+                            postsDiv.scrollTo({
+                                top: postsDiv.scrollHeight,
+                                behavior: 'smooth'
+                            });
+                        }, 50);
+                    };
+                    window.visualViewport.removeEventListener('resize', handleViewportChange); // Remove old listener
+                    window.visualViewport.addEventListener('resize', handleViewportChange);
+                    
+                    // Trigger adjustment immediately on focus
+                    handleViewportChange(); 
+
+                } else {
+                    // Fallback for browsers without visualViewport (less precise)
+                    // This often means the viewport doesn't shrink, but the element moves.
+                    // We'll rely on the fixed position and increased padding-bottom.
+                    // You might need to manually scroll the view in some older devices.
+                    setTimeout(() => {
+                        postsDiv.scrollTo({
+                            top: postsDiv.scrollHeight,
+                            behavior: 'smooth'
+                        });
+                    }, 50);
+                }
             });
 
             postText.addEventListener('blur', () => {
-                // Revert to fixed when keyboard closes
-                postInputArea.style.position = 'fixed';
+                // Reset input area position when blur occurs
                 postInputArea.style.bottom = '0';
+                adjustPostsPadding(); // Re-adjust padding for when keyboard is gone
+
+                // Clean up visualViewport listener if it was added
+                if (window.visualViewport) {
+                    const handleViewportChange = () => { /* no-op */ }; // Dummy function to remove listener
+                    window.visualViewport.removeEventListener('resize', handleViewportChange);
+                }
             });
-        }
+        };
+
+        // Initial setup for mobile layout
+        document.addEventListener('DOMContentLoaded', setupMobileLayout);
+        window.addEventListener('resize', setupMobileLayout);
+        window.addEventListener('orientationchange', setupMobileLayout);
 
 
         window.openSignInModal = () => {
