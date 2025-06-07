@@ -96,6 +96,7 @@
             box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
             box-sizing: border-box;
             flex-shrink: 0; /* Prevent input area from shrinking */
+            display: block; /* Default for desktop */
         }
 
         #postText {
@@ -126,6 +127,7 @@
         #postBtn {
             width: 100%;
             margin-bottom: 0;
+            flex-shrink: 0; /* Prevent button from shrinking in flex container */
         }
 
         #postBtn:disabled {
@@ -277,29 +279,27 @@
             right: 0;
         }
 
+        /* --- MOBILE SPECIFIC STYLES --- */
         @media (max-width: 600px) {
-            h2 { /* Hide "Community Forum" title on mobile */
-                display: none;
-            }
-
-            .post-header {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-
-            .post-header span:last-child {
-                margin-top: 5px;
+            h2 { /* "Community Forum" title */
+                position: absolute; /* Keep it in flow but allow comments to overlap */
+                top: 0; /* Or adjust based on header height */
+                left: 50%;
+                transform: translateX(-50%);
+                width: calc(100% - 40px); /* Account for padding */
+                text-align: center;
+                z-index: 1; /* Below comments */
+                color: #f7a800; /* Ensure visibility */
             }
 
             #forumSection {
                 padding: 15px 10px;
-                /* No specific height, let flexbox handle it */
+                padding-top: 60px; /* Add padding at top to reveal the h2 */
             }
 
             #posts {
-                padding-bottom: 120px; /* Adjusted padding-bottom for comments on mobile */
-                /* This value might still need slight fine-tuning depending on the exact
-                   height of the input area and expected keyboard behavior. */
+                padding-bottom: 120px; /* Base padding for input area when keyboard is hidden */
+                margin-top: -30px; /* Pull comments up to overlap the H2 slightly */
             }
 
             .post-input-area {
@@ -317,16 +317,25 @@
                 box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
                 box-sizing: border-box;
                 transform: translateZ(0); /* Improve rendering performance */
+                display: flex; /* Use flexbox for horizontal layout */
+                align-items: flex-end; /* Align items to the bottom */
             }
 
             #postText {
-                min-height: 60px;
-                margin-bottom: 10px;
+                min-height: 50px; /* Slightly smaller text area */
+                height: auto; /* Allow it to grow */
+                margin-bottom: 0; /* Remove bottom margin here */
+                margin-right: 10px; /* Space between text area and button */
+                flex-grow: 1; /* Allow text area to take available space */
+                padding: 8px; /* Slightly less padding */
             }
 
             #postBtn {
-                margin-bottom: 5px;
-                height: 40px;
+                margin-bottom: 0;
+                height: 50px; /* Make button height match textarea */
+                width: auto; /* Auto width */
+                padding: 0 15px; /* Horizontal padding */
+                font-size: 1em; /* Normal font size */
             }
         }
     </style>
@@ -437,7 +446,7 @@
         function renderPosts(snapshot) {
             let lastDate = null;
             // Check if already at the bottom before re-rendering
-            const wasAtBottom = postsDiv.scrollHeight - postsDiv.scrollTop <= postsDiv.clientHeight + 150; // A bit of tolerance
+            const wasAtBottom = postsDiv.scrollHeight - postsDiv.scrollTop <= postsDiv.clientHeight + postInputArea.offsetHeight + 50; // Added tolerance for input area
             const currentScrollTop = postsDiv.scrollTop;
             const oldHeight = postsDiv.scrollHeight;
             
@@ -753,7 +762,11 @@
                 postInputArea.style.position = 'sticky';
                 postInputArea.style.bottom = '0';
                 postsDiv.style.paddingBottom = '15px'; // Default desktop padding
-                
+                postInputArea.style.display = 'block'; // Reset flexbox for desktop
+                postText.style.marginRight = '0'; // Reset margin for desktop
+                postBtn.style.width = '100%'; // Reset button width for desktop
+                postBtn.style.height = 'auto'; // Reset button height for desktop
+
                 // Remove visualViewport listener if it was added for mobile
                 if (window.visualViewport && visualViewportResizeListener) {
                     window.visualViewport.removeEventListener('resize', visualViewportResizeListener);
