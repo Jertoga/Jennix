@@ -95,6 +95,7 @@
             transition: background-color 0.3s ease;
             width: 100%;
             box-sizing: border-box;
+            position: relative;
         }
 
         .post-header {
@@ -112,9 +113,19 @@
             margin-right: 10px;
         }
 
-        .post-header span:last-child {
+        .post-timestamp {
             color: #888;
             font-size: 0.8em;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+
+        .post-edited {
+            color: #666;
+            font-size: 0.7em;
+            font-style: italic;
+            margin-top: 2px;
         }
 
         .post-content {
@@ -123,6 +134,115 @@
             word-wrap: break-word;
             overflow-wrap: break-word;
             max-width: 100%;
+            margin-bottom: 10px;
+        }
+
+        .post-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #333;
+        }
+
+        .post-action-btn {
+            background-color: transparent;
+            border: 1px solid #666;
+            color: #888;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8em;
+            transition: all 0.3s ease;
+        }
+
+        .post-action-btn:hover {
+            background-color: #333;
+            color: #fff;
+        }
+
+        .post-action-btn.edit-btn:hover {
+            border-color: #f7a800;
+            color: #f7a800;
+        }
+
+        .post-action-btn.delete-btn:hover {
+            border-color: #ff4444;
+            color: #ff4444;
+        }
+
+        .post-action-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .post-action-btn:disabled:hover {
+            background-color: transparent;
+            color: #666;
+            border-color: #666;
+        }
+
+        .edit-form {
+            display: none;
+            margin-top: 10px;
+        }
+
+        .edit-form.active {
+            display: block;
+        }
+
+        .edit-textarea {
+            width: 100%;
+            background-color: #2a2a2a;
+            border: 1px solid #f7a800;
+            color: #fff;
+            padding: 10px;
+            border-radius: 4px;
+            min-height: 60px;
+            resize: vertical;
+            margin-bottom: 10px;
+            font-family: inherit;
+        }
+
+        .edit-textarea:focus {
+            outline: none;
+            box-shadow: 0 0 5px rgba(247, 168, 0, 0.3);
+        }
+
+        .edit-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .edit-save-btn {
+            background-color: #f7a800;
+            color: #fff;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+
+        .edit-save-btn:hover {
+            background-color: #ffbb33;
+        }
+
+        .edit-cancel-btn {
+            background-color: transparent;
+            color: #888;
+            border: 1px solid #666;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+
+        .edit-cancel-btn:hover {
+            background-color: #333;
+            color: #fff;
         }
 
         #logoutBtn {
@@ -183,8 +303,13 @@
                 align-items: flex-start;
             }
 
-            .post-header span:last-child {
+            .post-timestamp {
+                align-items: flex-start;
                 margin-top: 5px;
+            }
+
+            .post-actions {
+                justify-content: flex-start;
             }
 
             #forumSection {
@@ -310,7 +435,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, setDoc, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, setDoc, doc, getDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDsb7m4EijaU3NNxwoos8y6egI29nfbChk",
@@ -451,7 +576,9 @@
                         text: postText.value,
                         username: currentUser.username,
                         email: currentUser.email,
-                        timestamp: new Date()
+                        userId: currentUser.uid,
+                        timestamp: new Date(),
+                        editedAt: null
                     });
                     
                     // Leeg het tekstveld
@@ -473,6 +600,47 @@
             }
         };
 
+        // Edit post function
+        async function editPost(postId, newText) {
+            try {
+                await updateDoc(doc(db, "posts", postId), {
+                    text: newText,
+                    editedAt: new Date()
+                });
+            } catch (err) {
+                console.error("Error editing post:", err);
+                alert("Error editing post");
+            }
+        }
+
+        // Delete post function
+        async function deletePost(postId) {
+            if (confirm("Are you sure you want to delete this post?")) {
+                try {
+                    await deleteDoc(doc(db, "posts", postId));
+                } catch (err) {
+                    console.error("Error deleting post:", err);
+                    alert("Error deleting post");
+                }
+            }
+        }
+
+        // Check if edit is allowed (within 15 minutes)
+        function canEdit(timestamp) {
+            const now = new Date();
+            const postTime = timestamp.toDate();
+            const diffMinutes = (now - postTime) / (1000 * 60);
+            return diffMinutes <= 15;
+        }
+
+        // Check if delete is allowed (within 1 hour)
+        function canDelete(timestamp) {
+            const now = new Date();
+            const postTime = timestamp.toDate();
+            const diffMinutes = (now - postTime) / (1000 * 60);
+            return diffMinutes <= 60;
+        }
+
         // Format date
         function formatDate(date) {
             return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -483,6 +651,37 @@
             return date1.getDate() !== date2.getDate() || 
                    date1.getMonth() !== date2.getMonth() ||
                    date1.getFullYear() !== date2.getFullYear();
+        }
+
+        // Create edit form
+        function createEditForm(postId, currentText) {
+            const editForm = document.createElement("div");
+            editForm.classList.add("edit-form");
+            editForm.innerHTML = `
+                <textarea class="edit-textarea">${currentText}</textarea>
+                <div class="edit-actions">
+                    <button class="edit-cancel-btn">Cancel</button>
+                    <button class="edit-save-btn">Save</button>
+                </div>
+            `;
+
+            const textarea = editForm.querySelector('.edit-textarea');
+            const saveBtn = editForm.querySelector('.edit-save-btn');
+            const cancelBtn = editForm.querySelector('.edit-cancel-btn');
+
+            saveBtn.onclick = async () => {
+                const newText = textarea.value.trim();
+                if (newText && newText !== currentText) {
+                    await editPost(postId, newText);
+                }
+                editForm.classList.remove('active');
+            };
+
+            cancelBtn.onclick = () => {
+                editForm.classList.remove('active');
+            };
+
+            return editForm;
         }
 
         // Show posts met verbeterde vloeiende scrolling
@@ -497,8 +696,9 @@
             
             postsDiv.innerHTML = "";
             
-            snapshot.forEach(doc => {
-                const postData = doc.data();
+            snapshot.forEach(docSnapshot => {
+                const postData = docSnapshot.data();
+                const postId = docSnapshot.id;
                 const postDate = postData.timestamp.toDate();
                 
                 if (!lastDate || isDifferentDay(postDate, lastDate)) {
@@ -518,11 +718,23 @@
                 const usernameSpan = document.createElement("span");
                 usernameSpan.textContent = postData.username;
                 
-                const timestampSpan = document.createElement("span");
-                timestampSpan.textContent = formatDate(postDate);
+                const timestampDiv = document.createElement("div");
+                timestampDiv.classList.add("post-timestamp");
+                
+                const timeSpan = document.createElement("span");
+                timeSpan.textContent = formatDate(postDate);
+                timestampDiv.appendChild(timeSpan);
+                
+                // Show edited timestamp if post was edited
+                if (postData.editedAt) {
+                    const editedSpan = document.createElement("span");
+                    editedSpan.classList.add("post-edited");
+                    editedSpan.textContent = `edited ${formatDate(postData.editedAt.toDate())}`;
+                    timestampDiv.appendChild(editedSpan);
+                }
                 
                 postHeader.appendChild(usernameSpan);
-                postHeader.appendChild(timestampSpan);
+                postHeader.appendChild(timestampDiv);
                 
                 const postContent = document.createElement("div");
                 postContent.classList.add("post-content");
@@ -530,6 +742,48 @@
                 
                 postDiv.appendChild(postHeader);
                 postDiv.appendChild(postContent);
+                
+                // Add edit/delete buttons if user owns the post
+                if (currentUser && postData.userId === currentUser.uid) {
+                    const actionsDiv = document.createElement("div");
+                    actionsDiv.classList.add("post-actions");
+                    
+                    // Edit button (available for 15 minutes)
+                    const editBtn = document.createElement("button");
+                    editBtn.classList.add("post-action-btn", "edit-btn");
+                    editBtn.textContent = "Edit";
+                    
+                    if (canEdit(postData.timestamp)) {
+                        editBtn.onclick = () => {
+                            // Toggle edit form
+                            let editForm = postDiv.querySelector('.edit-form');
+                            if (!editForm) {
+                                editForm = createEditForm(postId, postData.text);
+                                postDiv.appendChild(editForm);
+                            }
+                            editForm.classList.toggle('active');
+                        };
+                    } else {
+                        editBtn.disabled = true;
+                        editBtn.title = "Edit time expired (15 minutes)";
+                    }
+                    
+                    // Delete button (available for 1 hour)
+                    const deleteBtn = document.createElement("button");
+                    deleteBtn.classList.add("post-action-btn", "delete-btn");
+                    deleteBtn.textContent = "Delete";
+                    
+                    if (canDelete(postData.timestamp)) {
+                        deleteBtn.onclick = () => deletePost(postId);
+                    } else {
+                        deleteBtn.disabled = true;
+                        deleteBtn.title = "Delete time expired (1 hour)";
+                    }
+                    
+                    actionsDiv.appendChild(editBtn);
+                    actionsDiv.appendChild(deleteBtn);
+                    postDiv.appendChild(actionsDiv);
+                }
                 
                 postsDiv.appendChild(postDiv);
             });
@@ -613,18 +867,3 @@
         };
         window.openSignUpModal = () => {
             document.getElementById("signUpModal").style.display = "flex";
-        };
-        window.closeSignUpModal = () => {
-            document.getElementById("signUpModal").style.display = "none";
-        };
-        window.switchToSignUp = () => {
-            closeSignInModal();
-            openSignUpModal();
-        };
-        window.switchToSignIn = () => {
-            closeSignUpModal();
-            openSignInModal();
-        };
-    </script>
-</body>
-</html>
