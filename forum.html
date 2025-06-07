@@ -18,6 +18,7 @@
 
         header {
             flex-shrink: 0; /* Prevent header from shrinking */
+            transition: transform 0.3s ease-out; /* Smooth transition for header movement */
         }
 
         footer {
@@ -58,8 +59,7 @@
             overflow-y: auto; /* Only scrollbar for comments */
             overflow-x: hidden; /* Hide horizontal scrollbar */
             margin-bottom: 0; 
-            /* padding-bottom will be dynamically set by JS on mobile */
-            padding-bottom: 15px; /* Default for desktop */
+            padding-bottom: 15px; /* Default for desktop, adjusted by JS for mobile */
         }
 
         /* Custom scrollbar styling for #posts */
@@ -139,7 +139,7 @@
             background-color: #1e1e1e;
             border-radius: 6px;
             padding: 15px;
-            margin-bottom: 15px;
+            margin-bottom: 15px; /* Consistent spacing between posts */
             border: 1px solid #333;
             transition: background-color 0.3s ease;
             width: 100%;
@@ -287,15 +287,17 @@
             }
 
             h2 { /* "Community Forum" title on mobile */
-                font-size: 1.5em; /* Smaller font size for mobile */
+                font-size: 1.3em; /* Even smaller font size for mobile */
                 text-align: center;
-                margin-bottom: 15px; 
+                margin-top: 10px; /* Adjust as needed */
+                margin-bottom: 10px; /* Adjust as needed */
+                flex-shrink: 0; /* Prevent from shrinking */
             }
 
             #posts {
                 /* Height will be set by JS, no fixed padding-bottom here for dynamic calculation */
                 flex-grow: 1; /* Allow comments to take remaining height */
-                padding-bottom: 5px; /* Minimal padding to separate from input area */
+                /* padding-bottom: handled by JS to match post margin-bottom */
             }
 
             .post-input-area {
@@ -332,6 +334,11 @@
                 width: auto; /* Auto width */
                 padding: 0 15px; /* Horizontal padding */
                 font-size: 0.9em; /* Slightly smaller font size for button */
+            }
+
+            /* Class to move header out of view when keyboard is active */
+            .header-hidden {
+                transform: translateY(-100%); /* Move header up by its full height */
             }
         }
     </style>
@@ -433,6 +440,9 @@
         const postText = document.getElementById("postText");
         const postsDiv = document.getElementById("posts");
         const postInputArea = document.querySelector('.post-input-area');
+        const mainHeader = document.querySelector('header');
+        const communityForumH2 = document.querySelector('#forumSection h2');
+
 
         // Check for mobile based on user agent and screen width
         const isMobileDevice = () => /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth <= 600;
@@ -749,7 +759,7 @@
             }
         }
         
-        // --- Mobile Layout Adjustments (Further Improved) ---
+        // --- Mobile Layout Adjustments ---
         let visualViewportResizeListener = null;
 
         const adjustForumLayout = () => {
@@ -763,8 +773,9 @@
                 postText.style.marginRight = '0'; // Reset margin for desktop
                 postBtn.style.width = '100%'; // Reset button width for desktop
                 postBtn.style.height = 'auto'; // Reset button height for desktop
-                document.querySelector('h2').style.fontSize = '2em'; // Reset h2 font size
-
+                communityForumH2.style.fontSize = '2em'; // Reset h2 font size
+                mainHeader.classList.remove('header-hidden'); // Ensure header is visible
+                
                 // Remove visualViewport listener if it was added for mobile
                 if (window.visualViewport && visualViewportResizeListener) {
                     window.visualViewport.removeEventListener('resize', visualViewportResizeListener);
@@ -781,20 +792,28 @@
             postInputArea.style.width = '100%';
             postInputArea.style.zIndex = '999';
 
-            // Calculate heights for dynamic layout
-            const headerHeight = document.querySelector('header').offsetHeight;
-            const h2Height = document.querySelector('h2').offsetHeight;
-            const forumSectionPaddingTop = parseFloat(getComputedStyle(forumSection).paddingTop);
-            const forumSectionPaddingBottom = parseFloat(getComputedStyle(forumSection).paddingBottom);
-            const inputAreaHeight = postInputArea.offsetHeight;
-
-            // Define a small buffer space between posts and the input area
-            const buffer = 5; 
+            // Define consistent buffer space (equal to .post margin-bottom)
+            const buffer = 15; 
 
             // Function to set postsDiv max-height
             const setPostsMaxHeight = (keyboardHeight = 0) => {
-                const availableHeight = window.innerHeight - headerHeight - h2Height - forumSectionPaddingTop - forumSectionPaddingBottom - inputAreaHeight - keyboardHeight - buffer;
-                postsDiv.style.maxHeight = `${Math.max(0, availableHeight)}px`; // Ensure it's not negative
+                const headerRect = mainHeader.getBoundingClientRect();
+                const h2Rect = communityForumH2.getBoundingClientRect();
+                const inputAreaHeight = postInputArea.offsetHeight;
+
+                // Available height for posts depends on keyboard state and header visibility
+                let availableHeight;
+                if (keyboardHeight > 0) {
+                    // Keyboard is open: header is hidden, 'Community Forum' is at top
+                    // Calculate from top of visual viewport (which is where h2 will be)
+                    availableHeight = window.visualViewport.height - h2Rect.height - inputAreaHeight - keyboardHeight - buffer - parseFloat(getComputedStyle(forumSection).paddingTop) - parseFloat(getComputedStyle(forumSection).paddingBottom);
+                } else {
+                    // Keyboard is closed: header is visible
+                    availableHeight = window.innerHeight - headerRect.height - h2Rect.height - inputAreaHeight - buffer - parseFloat(getComputedStyle(forumSection).paddingTop) - parseFloat(getComputedStyle(forumSection).paddingBottom);
+                }
+                
+                postsDiv.style.maxHeight = `${Math.max(0, availableHeight)}px`; 
+
                 // Scroll to bottom after height adjustment to keep last comment in view
                 postsDiv.scrollTo({
                     top: postsDiv.scrollHeight,
@@ -817,10 +836,12 @@
                     
                     if (keyboardHeight > 0) { 
                         // Keyboard is open
+                        mainHeader.classList.add('header-hidden'); // Hide main header
                         postInputArea.style.bottom = `${keyboardHeight}px`;
                         setPostsMaxHeight(keyboardHeight);
                     } else { 
                         // Keyboard is closed
+                        mainHeader.classList.remove('header-hidden'); // Show main header
                         postInputArea.style.bottom = '0';
                         setPostsMaxHeight(0); // Reset keyboard height to 0
                     }
@@ -833,7 +854,7 @@
             // the posts div tries to stay within bounds.
             postText.addEventListener('focus', () => {
                 if (!window.visualViewport) {
-                    // Try to re-calculate height and scroll on focus
+                    mainHeader.classList.add('header-hidden'); // Hide main header
                     setPostsMaxHeight(); 
                     setTimeout(() => {
                         postsDiv.scrollTo({
@@ -846,7 +867,7 @@
 
             postText.addEventListener('blur', () => {
                 if (!window.visualViewport) {
-                    // Reset positions if visualViewport is not used
+                    mainHeader.classList.remove('header-hidden'); // Show main header
                     postInputArea.style.bottom = '0';
                     setPostsMaxHeight(); 
                 }
