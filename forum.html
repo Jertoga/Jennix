@@ -18,7 +18,10 @@
 
         header {
             flex-shrink: 0; /* Prevent header from shrinking */
-            /* No transform needed anymore, display handled by media query */
+            transition: transform 0.3s ease-out; /* Smooth transition for header movement */
+            background-color: #121212; /* Ensure header has a background */
+            position: relative; /* Needed for z-index and proper flow */
+            z-index: 10; /* Ensure header stays on top of content when not hidden */
         }
 
         footer {
@@ -282,7 +285,8 @@
         /* --- MOBILE SPECIFIC STYLES --- */
         @media (max-width: 600px) {
             header {
-                display: none; /* Hide header completely on mobile */
+                /* Displayed by default, transformed by JS */
+                width: 100%; /* Ensure it takes full width */
             }
 
             #forumSection {
@@ -299,7 +303,30 @@
                 margin-bottom: 10px; /* Minimal bottom margin */
                 flex-shrink: 0; /* Prevent from shrinking */
                 padding: 0; /* Ensure no extra padding */
-                display: none; /* Hidden by default on mobile, shown by JS when keyboard active */
+                transition: transform 0.3s ease-out; /* Smooth transition for shifting */
+            }
+
+            /* Class to move header out of view when keyboard is active */
+            .header-hidden {
+                transform: translateY(-100%); /* Move header up by its full height */
+                position: absolute; /* Take out of flow */
+                visibility: hidden; /* Hide content from screen readers and interaction */
+                pointer-events: none; /* Disable clicks */
+            }
+
+            /* Class to shift h2 up to the top when keyboard is active */
+            .h2-shifted-mobile {
+                position: fixed; /* Fix to top of viewport */
+                top: 0;
+                left: 0;
+                right: 0;
+                background-color: #121212; /* Match header background */
+                padding-top: 10px; /* Adjust padding for fixed position */
+                padding-bottom: 10px;
+                margin: 0; /* Remove margins when fixed */
+                z-index: 1000; /* Ensure it's above other content */
+                box-shadow: 0 2px 5px rgba(0,0,0,0.3); /* Subtle shadow */
+                box-sizing: border-box;
             }
 
             #posts {
@@ -767,21 +794,21 @@
         const adjustForumLayout = () => {
             if (!isMobileDevice()) {
                 // Reset for desktop
-                mainHeader.style.display = 'block'; // Show header on desktop
-                communityForumH2.style.display = 'block'; // Show h2 on desktop
+                mainHeader.classList.remove('header-hidden'); /* Ensure header is visible */
+                communityForumH2.classList.remove('h2-shifted-mobile'); /* Reset h2 position */
+                communityForumH2.style.fontSize = '2em'; /* Reset h2 font size */
+                communityForumH2.style.marginTop = 'auto'; /* Reset margins */
+                communityForumH2.style.marginBottom = 'auto'; /* Reset margins */
                 postInputArea.style.position = 'sticky';
                 postInputArea.style.bottom = '0';
-                postsDiv.style.paddingBottom = '15px'; // Default desktop padding
-                postsDiv.style.height = 'auto'; // Reset height for desktop to let flex-grow handle it
-                postsDiv.style.maxHeight = 'unset'; // Remove max-height constraint
-                postInputArea.style.display = 'block'; // Reset flexbox for desktop
-                postText.style.marginRight = '0'; // Reset margin for desktop
-                postBtn.style.width = '100%'; // Reset button width for desktop
-                postBtn.style.height = 'auto'; // Reset button height for desktop
-                communityForumH2.style.fontSize = '2em'; // Reset h2 font size for desktop
-                communityForumH2.style.marginTop = 'auto'; // Reset margins
-                communityForumH2.style.marginBottom = 'auto'; // Reset margins
-
+                postsDiv.style.paddingBottom = '15px'; /* Default desktop padding */
+                postsDiv.style.height = 'auto'; /* Reset height for desktop to let flex-grow handle it */
+                postsDiv.style.maxHeight = 'unset'; /* Remove max-height constraint */
+                postInputArea.style.display = 'block'; /* Reset flexbox for desktop */
+                postText.style.marginRight = '0'; /* Reset margin for desktop */
+                postBtn.style.width = '100%'; /* Reset button width for desktop */
+                postBtn.style.height = 'auto'; /* Reset button height for desktop */
+                
                 // Remove visualViewport listener if it was added for mobile
                 if (window.visualViewport && visualViewportResizeListener) {
                     window.visualViewport.removeEventListener('resize', visualViewportResizeListener);
@@ -791,8 +818,7 @@
             }
 
             // Mobile Specific Logic
-            mainHeader.style.display = 'none'; // Hide header completely on mobile
-            // h2 display is controlled by keyboard activation
+            // Header and h2 are handled by classes based on keyboard state
 
             // Apply fixed position for mobile input area
             postInputArea.style.position = 'fixed';
@@ -807,6 +833,7 @@
 
             // Function to set postsDiv height based on available screen space
             const setPostsHeight = () => {
+                const headerHeight = mainHeader.offsetHeight;
                 const h2Height = communityForumH2.offsetHeight;
                 const h2Style = getComputedStyle(communityForumH2);
                 const h2MarginTop = parseFloat(h2Style.marginTop);
@@ -816,16 +843,19 @@
                 const forumSectionPaddingTop = parseFloat(getComputedStyle(forumSection).paddingTop);
                 const forumSectionPaddingBottom = parseFloat(getComputedStyle(forumSection).paddingBottom);
 
-                // Use visualViewport.height when keyboard is open, otherwise window.innerHeight
                 const availableScreenHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
 
-                let h2Space = 0;
-                if (communityForumH2.style.display === 'block') { // Only add h2 height if it's visible
-                    h2Space = h2Height + h2MarginTop + h2MarginBottom;
+                let spaceTakenAbovePosts = 0;
+                if (mainHeader.classList.contains('header-hidden')) {
+                    // Header is hidden, h2 is shifted to top
+                    spaceTakenAbovePosts = h2Height + h2MarginTop + h2MarginBottom; // h2 is fixed at top
+                } else {
+                    // Header is visible, h2 is below header
+                    spaceTakenAbovePosts = headerHeight + h2Height + h2MarginTop + h2MarginBottom;
                 }
 
                 const calculatedHeight = availableScreenHeight 
-                                        - h2Space 
+                                        - spaceTakenAbovePosts
                                         - (inputAreaHeight + buffer)
                                         - forumSectionPaddingTop 
                                         - forumSectionPaddingBottom;
@@ -854,32 +884,41 @@
                     
                     if (keyboardHeight > 0) { 
                         // Keyboard is open
-                        communityForumH2.style.display = 'block'; // Show "Community Forum"
+                        mainHeader.classList.add('header-hidden'); // Hide main header
+                        communityForumH2.classList.add('h2-shifted-mobile'); // Shift "Community Forum" to top
+                        
+                        // Scroll the input area into view *after* layout has settled
+                        setTimeout(() => {
+                            postInputArea.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                        }, 50); // Small delay to allow layout to adjust
                     } else { 
                         // Keyboard is closed
-                        communityForumH2.style.display = 'none'; // Hide "Community Forum"
+                        mainHeader.classList.remove('header-hidden'); // Show main header
+                        communityForumH2.classList.remove('h2-shifted-mobile'); // Reset "Community Forum"
                     }
-                    // Recalculate height based on current viewport and h2 visibility
+                    // Recalculate height based on current viewport and header/h2 visibility
                     setPostsHeight(); 
                 };
                 window.visualViewport.addEventListener('resize', visualViewportResizeListener);
             }
 
             // Fallback for devices without visualViewport (less precise, might show slight scroll issues)
-            // This relies on the OS pushing content. We just ensure the posts div adapts.
             postText.addEventListener('focus', () => {
                 if (!window.visualViewport) {
-                    communityForumH2.style.display = 'block'; // Show on focus
-                    setPostsHeight(); // Recalculate on focus
-                    // Use scrollIntoView to bring textarea to top of keyboard
-                    postText.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    mainHeader.classList.add('header-hidden');
+                    communityForumH2.classList.add('h2-shifted-mobile');
+                    setPostsHeight(); 
+                    setTimeout(() => {
+                        postInputArea.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                    }, 50);
                 }
             });
 
             postText.addEventListener('blur', () => {
                 if (!window.visualViewport) {
-                    communityForumH2.style.display = 'none'; // Hide on blur
-                    setPostsHeight(); // Recalculate on blur
+                    mainHeader.classList.remove('header-hidden');
+                    communityForumH2.classList.remove('h2-shifted-mobile');
+                    setPostsHeight(); 
                 }
             });
         };
