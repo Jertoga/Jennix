@@ -12,9 +12,6 @@
             height: 100%;
             margin: 0;
             overflow: hidden; /* Prevent main scrollbars */
-        }
-
-        body {
             display: flex;
             flex-direction: column;
         }
@@ -26,6 +23,7 @@
         footer {
             flex-shrink: 0; /* Prevent footer from shrinking */
             margin-top: auto; /* Push footer to the bottom */
+            display: none; /* Temporarily hide footer for better testing on some mobile layouts */
         }
 
         .content {
@@ -59,8 +57,8 @@
             flex-grow: 1;
             overflow-y: auto; /* Only scrollbar for comments */
             overflow-x: hidden; /* Hide horizontal scrollbar */
-            margin-bottom: 10px;
-            padding-bottom: 15px; /* Default padding for desktop */
+            margin-bottom: 0; /* No margin here, padding-bottom handles spacing */
+            padding-bottom: 15px; /* Default padding for desktop, adjusted by JS for mobile */
         }
 
         /* Custom scrollbar styling for #posts */
@@ -281,25 +279,19 @@
 
         /* --- MOBILE SPECIFIC STYLES --- */
         @media (max-width: 600px) {
-            h2 { /* "Community Forum" title */
-                position: absolute; /* Keep it in flow but allow comments to overlap */
-                top: 0; /* Or adjust based on header height */
-                left: 50%;
-                transform: translateX(-50%);
-                width: calc(100% - 40px); /* Account for padding */
+            h2 { /* "Community Forum" title on mobile */
+                font-size: 1.5em; /* Smaller font size for mobile */
                 text-align: center;
-                z-index: 1; /* Below comments */
-                color: #f7a800; /* Ensure visibility */
+                margin-bottom: 15px; /* Adjust as needed */
             }
 
             #forumSection {
-                padding: 15px 10px;
-                padding-top: 60px; /* Add padding at top to reveal the h2 */
+                padding: 10px; /* Reduced overall padding for more space */
             }
 
             #posts {
-                padding-bottom: 120px; /* Base padding for input area when keyboard is hidden */
-                margin-top: -30px; /* Pull comments up to overlap the H2 slightly */
+                padding-bottom: 0; /* Will be dynamically set by JS */
+                margin-top: 0; /* Reset margin-top */
             }
 
             .post-input-area {
@@ -319,23 +311,23 @@
                 transform: translateZ(0); /* Improve rendering performance */
                 display: flex; /* Use flexbox for horizontal layout */
                 align-items: flex-end; /* Align items to the bottom */
+                gap: 10px; /* Space between text area and button */
             }
 
             #postText {
-                min-height: 50px; /* Slightly smaller text area */
+                min-height: 45px; /* Slightly smaller min-height for text area */
                 height: auto; /* Allow it to grow */
                 margin-bottom: 0; /* Remove bottom margin here */
-                margin-right: 10px; /* Space between text area and button */
                 flex-grow: 1; /* Allow text area to take available space */
                 padding: 8px; /* Slightly less padding */
             }
 
             #postBtn {
                 margin-bottom: 0;
-                height: 50px; /* Make button height match textarea */
+                height: 45px; /* Make button height match textarea */
                 width: auto; /* Auto width */
                 padding: 0 15px; /* Horizontal padding */
-                font-size: 1em; /* Normal font size */
+                font-size: 0.9em; /* Slightly smaller font size for button */
             }
         }
     </style>
@@ -446,7 +438,7 @@
         function renderPosts(snapshot) {
             let lastDate = null;
             // Check if already at the bottom before re-rendering
-            const wasAtBottom = postsDiv.scrollHeight - postsDiv.scrollTop <= postsDiv.clientHeight + postInputArea.offsetHeight + 50; // Added tolerance for input area
+            const wasAtBottom = postsDiv.scrollHeight - postsDiv.scrollTop <= postsDiv.clientHeight + 50; // A bit of tolerance
             const currentScrollTop = postsDiv.scrollTop;
             const oldHeight = postsDiv.scrollHeight;
             
@@ -758,7 +750,7 @@
 
         const setupMobileLayout = () => {
             if (!isMobileDevice()) {
-                // Reset for desktop if applicable
+                // Reset for desktop
                 postInputArea.style.position = 'sticky';
                 postInputArea.style.bottom = '0';
                 postsDiv.style.paddingBottom = '15px'; // Default desktop padding
@@ -766,6 +758,7 @@
                 postText.style.marginRight = '0'; // Reset margin for desktop
                 postBtn.style.width = '100%'; // Reset button width for desktop
                 postBtn.style.height = 'auto'; // Reset button height for desktop
+                document.querySelector('h2').style.fontSize = '2em'; // Reset h2 font size
 
                 // Remove visualViewport listener if it was added for mobile
                 if (window.visualViewport && visualViewportResizeListener) {
@@ -786,7 +779,8 @@
             // Initial padding adjustment for #posts (accounting for input area + a bit of margin)
             const adjustPostsPadding = () => {
                 const inputAreaHeight = postInputArea.offsetHeight;
-                postsDiv.style.paddingBottom = `${inputAreaHeight + 15}px`; /* Adjusted for a bit less space */
+                // Add a very small buffer (e.g., 5px)
+                postsDiv.style.paddingBottom = `${inputAreaHeight + 5}px`; 
             };
             adjustPostsPadding(); // Run once on setup
 
@@ -799,17 +793,20 @@
 
                 visualViewportResizeListener = () => {
                     const keyboardHeight = window.innerHeight - window.visualViewport.height;
-                    // Only adjust if the keyboard is truly open (significant height difference)
+                    const inputAreaHeight = postInputArea.offsetHeight;
+
                     if (keyboardHeight > 0) { 
+                        // Keyboard is open: set input area directly above keyboard, adjust posts padding
                         postInputArea.style.bottom = `${keyboardHeight}px`;
-                        // Adjust posts padding to account for keyboard + input area
-                        postsDiv.style.paddingBottom = `${postInputArea.offsetHeight + keyboardHeight + 15}px`;
+                        postsDiv.style.paddingBottom = `${inputAreaHeight + keyboardHeight + 5}px`; // Input area height + keyboard height + buffer
                     } else { 
-                        // Keyboard is closed or no significant change, reset to bottom
+                        // Keyboard is closed: reset input area to bottom, adjust posts padding for input area only
                         postInputArea.style.bottom = '0';
-                        adjustPostsPadding(); // Re-adjust for fixed input area only
+                        postsDiv.style.paddingBottom = `${inputAreaHeight + 5}px`; // Input area height + buffer
                     }
+                    
                     // Attempt to scroll to the end of posts after keyboard adjustment
+                    // This is crucial to ensure the last comment is visible above the input area
                     setTimeout(() => {
                         postsDiv.scrollTo({
                             top: postsDiv.scrollHeight,
@@ -820,11 +817,10 @@
                 window.visualViewport.addEventListener('resize', visualViewportResizeListener);
             }
 
-            // For devices without visualViewport, rely on fixed position and padding
+            // Fallback for devices without visualViewport (less precise)
             postText.addEventListener('focus', () => {
-                // If visualViewport is not available, we assume the keyboard
-                // will push the content up. We try to scroll into view.
                 if (!window.visualViewport) {
+                    // Try to scroll the posts div to ensure the input area and end of posts are visible
                     setTimeout(() => {
                         postsDiv.scrollTo({
                             top: postsDiv.scrollHeight,
@@ -835,8 +831,8 @@
             });
 
             postText.addEventListener('blur', () => {
-                // Reset input area position when blur occurs if visualViewport not used
                 if (!window.visualViewport) {
+                    // Reset positions if visualViewport is not used
                     postInputArea.style.bottom = '0';
                     adjustPostsPadding(); 
                 }
