@@ -7,10 +7,530 @@
     <title>Gallery | Jennix</title>
     <link rel="stylesheet" href="style.css">
     <style>
-        /* --- LAAT DE CSS HIER INTACT ZOALS IN JOUW INPUT --- */
-        /* (Knip voor beknoptheid) */
+        /* Gallery-Specific Styling */
+        #gallerySection {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .gallery-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .sort-options {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .sort-btn {
+            background-color: #1e1e1e;
+            color: #ddd;
+            border: 1px solid #333;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .sort-btn.active {
+            background-color: #f7a800;
+            color: #121212;
+            border-color: #f7a800;
+        }
+        
+        .sort-btn:hover:not(.active) {
+            border-color: #f7a800;
+            color: #f7a800;
+        }
+        
+        .view-options {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .view-btn {
+            background-color: #1e1e1e;
+            color: #ddd;
+            border: 1px solid #333;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .view-btn.active {
+            background-color: #f7a800;
+            color: #121212;
+            border-color: #f7a800;
+        }
+        
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .gallery-item {
+            position: relative;
+            border-radius: 8px;
+            overflow: hidden;
+            background-color: #1e1e1e;
+            border: 1px solid #333;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+            aspect-ratio: 3/4;
+        }
+        
+        .gallery-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .gallery-item img, .gallery-item video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        
+        .gallery-item-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .gallery-item-info {
+            color: #fff;
+            font-size: 0.9em;
+        }
+        
+        .gallery-item-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .like-btn, .comment-btn {
+            background: none;
+            border: none;
+            color: #ddd;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: color 0.3s ease;
+        }
+        
+        .like-btn:hover, .comment-btn:hover {
+            color: #f7a800;
+        }
+        
+        .like-btn.liked {
+            color: #f7a800;
+        }
+        
+        .upload-container {
+            margin-bottom: 20px;
+            background-color: #1e1e1e;
+            border-radius: 8px;
+            padding: 20px;
+            border: 1px solid #333;
+        }
+        
+        .upload-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .upload-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .file-input-container {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .file-preview {
+            max-width: 100%;
+            max-height: 300px;
+            margin-top: 10px;
+            border-radius: 4px;
+            display: none;
+        }
+        
+        .file-preview.show {
+            display: block;
+        }
+        
+        .custom-file-input {
+            background-color: #333;
+            color: #fff;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            text-align: center;
+            transition: background-color 0.3s ease;
+        }
+        
+        .custom-file-input:hover {
+            background-color: #444;
+        }
+        
+        #fileInput {
+            position: absolute;
+            width: 0.1px;
+            height: 0.1px;
+            opacity: 0;
+            overflow: hidden;
+            z-index: -1;
+        }
+        
+        #captionText {
+            width: 100%;
+            background-color: #333;
+            border: 1px solid #444;
+            color: #fff;
+            padding: 12px;
+            border-radius: 4px;
+            min-height: 60px;
+            resize: vertical;
+            transition: border-color 0.3s ease;
+        }
+        
+        #captionText:focus {
+            outline: none;
+            border-color: #f7a800;
+        }
+        
+        #uploadBtn {
+            background-color: #f7a800;
+            color: #121212;
+            padding: 12px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s ease;
+        }
+        
+        #uploadBtn:hover {
+            background-color: #e69c00;
+        }
+        
+        #uploadBtn:disabled {
+            background-color: #666;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+        
+        /* Modal styling */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.9);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .modal.show {
+            display: flex;
+            opacity: 1;
+        }
+        
+        .modal-content {
+            position: relative;
+            background-color: #1e1e1e;
+            margin: auto;
+            padding: 0;
+            width: 90%;
+            max-width: 1000px;
+            max-height: 90vh;
+            border-radius: 8px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            border-bottom: 1px solid #333;
+        }
+        
+        .modal-title {
+            margin: 0;
+            color: #f7a800;
+        }
+        
+        .close-modal {
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+        
+        .close-modal:hover {
+            color: #f7a800;
+        }
+        
+        .modal-body {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            flex-grow: 1;
+        }
+        
+         #logoutBtn {
+            display: none;
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: transparent;
+            color: #f7a800;
+            border: 1px solid #f7a800;
+            padding: 8px 15px;
+            border-radius: 4px;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        #logoutBtn:hover {
+            background-color: #f7a800;
+            color: #121212;
+        }
+
+        .sign-in-button {
+            transition: opacity 0.3s ease;
+        }
+
+        .sign-in-button.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        @media (min-width: 768px) {
+            .modal-body {
+                flex-direction: row;
+            }
+        }
+        
+        .media-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #000;
+            overflow: hidden;
+            max-height: 70vh;
+        }
+        
+        .media-container img, .media-container video {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        
+        .comments-container {
+            width: 100%;
+            background-color: #1e1e1e;
+            padding: 15px;
+            overflow-y: auto;
+            max-height: 30vh;
+        }
+        
+        @media (min-width: 768px) {
+            .comments-container {
+                width: 350px;
+                max-height: 70vh;
+                border-left: 1px solid #333;
+            }
+        }
+        
+        .comment {
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #333;
+        }
+        
+        .comment-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+        
+        .comment-username {
+            font-weight: bold;
+            color: #f7a800;
+        }
+        
+        .comment-timestamp {
+            color: #888;
+            font-size: 0.8em;
+        }
+        
+        .comment-text {
+            color: #ddd;
+            line-height: 1.4;
+        }
+        
+        .comment-form {
+            margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .comment-input {
+            width: 100%;
+            background-color: #333;
+            border: 1px solid #444;
+            color: #fff;
+            padding: 12px;
+            border-radius: 4px;
+            min-height: 60px;
+            resize: vertical;
+        }
+        
+        .comment-input:focus {
+            outline: none;
+            border-color: #f7a800;
+        }
+        
+        .comment-submit {
+            background-color: #f7a800;
+            color: #121212;
+            padding: 8px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            align-self: flex-end;
+        }
+        
+        .comment-submit:hover {
+            background-color: #e69c00;
+        }
+        
+        .comment-submit:disabled {
+            background-color: #666;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+        
+        .modal-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            border-top: 1px solid #333;
+        }
+        
+        .modal-like-btn {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            background: none;
+            border: none;
+            color: #ddd;
+            cursor: pointer;
+            font-size: 1.1em;
+            transition: color 0.3s ease;
+        }
+        
+        .modal-like-btn:hover, .modal-like-btn.liked {
+            color: #f7a800;
+        }
+        
+        .modal-stats {
+            display: flex;
+            gap: 15px;
+            color: #888;
+        }
+        
+        .loading-spinner {
+            display: none;
+            width: 40px;
+            height: 40px;
+            margin: 40px auto;
+            border: 4px solid #333;
+            border-top: 4px solid #f7a800;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .no-content {
+            text-align: center;
+            color: #888;
+            margin: 40px 0;
+        }
+        
+        /* Mobile specific adjustments */
+        @media (max-width: 768px) {
+            .gallery-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .sort-options, .view-options {
+                justify-content: center;
+            }
+            
+            .sort-btn, .view-btn {
+                flex: 1;
+                text-align: center;
+                white-space: nowrap;
+            }
+            
+            .gallery-grid {
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+                gap: 10px;
+            }
+            
+            .upload-container {
+                padding: 15px;
+            }
+            
+            .modal-content {
+                width: 95%;
+                max-height: 95vh;
+            }
+        }
     </style>
 </head>
+
 <body>
     <header>
         <div class="logo">
@@ -30,9 +550,11 @@
             </ul>
         </nav>
     </header>
+
     <main class="content">
         <section id="gallerySection">
             <h2>Jenna Ortega Gallery</h2>
+            
             <!-- Upload Container -->
             <div class="upload-container">
                 <div class="upload-header">
@@ -50,6 +572,7 @@
                     <button id="uploadBtn" disabled>Upload</button>
                 </div>
             </div>
+            
             <!-- Gallery Controls -->
             <div class="gallery-controls">
                 <div class="sort-options">
@@ -64,11 +587,15 @@
                     <button class="view-btn" data-view="liked">My Likes</button>
                 </div>
             </div>
+            
             <div id="loadingSpinner" class="loading-spinner"></div>
+            
             <!-- Gallery Grid -->
             <div class="gallery-grid" id="galleryGrid"></div>
+            
             <div id="noContentMessage" class="no-content">No content available. Be the first to upload!</div>
         </section>
+        
         <!-- Media Modal -->
         <div id="mediaModal" class="modal">
             <div class="modal-content">
@@ -104,6 +631,7 @@
             </div>
         </div>
     </main>
+
     <!-- Sign In Modal -->
     <div id="signInModal" class="modal">
         <div class="modal-content">
@@ -119,6 +647,7 @@
             <p class="switch-text">Don't have an account? <a href="#" onclick="switchToSignUp()">Sign Up</a></p>
         </div>
     </div>
+
     <!-- Sign Up Modal -->
     <div id="signUpModal" class="modal">
         <div class="modal-content">
@@ -136,27 +665,37 @@
             <p class="switch-text">Already have an account? <a href="#" onclick="switchToSignIn()">Sign In</a></p>
         </div>
     </div>
+
     <footer>
         <p>&copy; 2025 Jennix. All rights reserved.</p>
     </footer>
 
-    <!-- Cloudinary + Gallery Script -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/uuid/9.0.0/uuidv4.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-    <script>
-        // CLOUDINARY SETTINGS
-        const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/dgwiny07o/upload";
-        const CLOUDINARY_UPLOAD_PRESET = "unsigned-gallery"; // Maak een unsigned preset aan in je Cloudinary dashboard
+    <!-- Firebase Script -->
+    <script type="module">
+        // Import Firebase modules
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, getDoc, onSnapshot, query, orderBy, doc, setDoc, updateDoc, arrayUnion, arrayRemove, where, getDocs, increment } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-firestore.js";
+        import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-storage.js";
 
-        // Simple Demo Auth (vervang dit voor productie)
-        let currentUser = JSON.parse(localStorage.getItem('jennix_user')) || null;
-        let userLikes = JSON.parse(localStorage.getItem('jennix_likes') || '[]');
-        let currentSort = 'recent';
-        let currentView = 'photos';
-        let mediaItems = [];
-        let currentMediaId = null;
+        // Firebase config
+        const firebaseConfig = {
+            apiKey: "AIzaSyDsb7m4EijaU3NNxwoos8y6egI29nfbChk",
+            authDomain: "jennix-777e1.firebaseapp.com",
+            projectId: "jennix-777e1",
+            storageBucket: "jennix-777e1.appspot.com",
+            messagingSenderId: "673075142639",
+            appId: "1:673075142639:web:ea93e3ae1b244463ca201a",
+            measurementId: "G-HKJ85NVGF4"
+        };
 
-        // UI ELEMENTS
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const storage = getStorage(app);
+
+        // DOM Elements for Gallery functionality
         const fileInput = document.getElementById('fileInput');
         const fileNameDisplay = document.getElementById('fileNameDisplay');
         const imagePreview = document.getElementById('imagePreview');
@@ -179,62 +718,123 @@
         const logoutBtn = document.getElementById('logoutBtn');
         const authButton = document.getElementById('authButton');
 
-        // AUTH UI LOGIC (demo)
-        function updateAuthUI() {
-            if (currentUser) {
-                captionText.disabled = false;
-                uploadBtn.disabled = false;
-                commentInput.disabled = false;
-                commentSubmit.disabled = false;
-                logoutBtn.style.display = "inline-block";
-                authButton.classList.add('hidden');
+        let currentUser = null;
+        let currentMediaId = null;
+        let currentSort = 'recent';
+        let currentView = 'photos';
+        let mediaItems = [];
+        let userLikes = [];
+
+        // Auth state observer (enkel 1 observer, geen forum-specifieke code hier)
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                try {
+                    const userDoc = await getDoc(doc(db, "users", user.uid));
+                    if (userDoc.exists()) {
+                        currentUser = {
+                            uid: user.uid,
+                            email: user.email,
+                            username: userDoc.data().username
+                        };
+                    } else {
+                        currentUser = {
+                            uid: user.uid,
+                            email: user.email,
+                            username: "User" // Default fallback
+                        };
+                    }
+                    
+                    // Enable upload and comment functionality
+                    captionText.disabled = false;
+                    uploadBtn.disabled = false;
+                    commentInput.disabled = false;
+                    commentSubmit.disabled = false;
+                    
+                    // Get user likes
+                    fetchUserLikes();
+                    
+                    // Update UI for logged in user
+                    logoutBtn.style.display = "inline-block";
+                    authButton.classList.add('hidden');
+                } catch (error) {
+                    console.error("Error getting user data:", error);
+                }
             } else {
+                currentUser = null;
+                userLikes = [];
+                
+                // Disable upload and comment functionality
                 captionText.disabled = true;
                 uploadBtn.disabled = true;
                 commentInput.disabled = true;
                 commentSubmit.disabled = true;
+                
+                // Update UI for logged out user
                 logoutBtn.style.display = "none";
                 authButton.classList.remove('hidden');
             }
-        }
-        updateAuthUI();
-        logoutBtn.onclick = () => {
-            localStorage.removeItem('jennix_user');
-            currentUser = null;
-            updateAuthUI();
-        };
-        signInForm.onsubmit = (e) => {
-            e.preventDefault();
-            currentUser = {
-                email: document.getElementById("signInEmail").value,
-                username: document.getElementById("signInEmail").value.split('@')[0],
-                uid: uuidv4()
-            };
-            localStorage.setItem('jennix_user', JSON.stringify(currentUser));
-            updateAuthUI();
-            closeSignInModal();
+            
+            // Load gallery content regardless of auth state
             loadGalleryContent();
-        };
-        signUpForm.onsubmit = (e) => {
+        });
+
+        // Sign In
+        signInForm.onsubmit = async (e) => {
             e.preventDefault();
-            currentUser = {
-                email: document.getElementById("signUpEmail").value,
-                username: document.getElementById("signUpUsername").value,
-                uid: uuidv4()
-            };
-            localStorage.setItem('jennix_user', JSON.stringify(currentUser));
-            updateAuthUI();
-            closeSignUpModal();
-            loadGalleryContent();
+            const email = document.getElementById("signInEmail").value;
+            const password = document.getElementById("signInPassword").value;
+            
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                closeSignInModal();
+            } catch (err) {
+                alert("Error: " + err.message);
+            }
         };
 
-        // FILE INPUT
+        // Sign Up
+        signUpForm.onsubmit = async (e) => {
+            e.preventDefault();
+            const username = document.getElementById("signUpUsername").value.trim();
+            const email = document.getElementById("signUpEmail").value;
+            const password = document.getElementById("signUpPassword").value;
+            
+            if (username.length < 3 || username.length > 20) {
+                alert("Username must be between 3 and 20 characters.");
+                return;
+            }
+
+            try {
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+                await setDoc(doc(db, "users", user.uid), {
+                    username: username,
+                    email: email
+                });
+                alert("Account created!");
+                closeSignUpModal();
+            } catch (err) {
+                alert("Error: " + err.message);
+            }
+        };
+
+        // Log out
+        logoutBtn.onclick = () => {
+            signOut(auth);
+        };
+
+        // File input change handler
         fileInput.addEventListener('change', () => {
             const file = fileInput.files[0];
+            
             if (file) {
                 fileNameDisplay.textContent = file.name;
+                
+                // Reset previews
                 imagePreview.classList.remove('show');
                 videoPreview.classList.remove('show');
+                
+                // Check file type and show appropriate preview
                 if (file.type.startsWith('image/')) {
                     const reader = new FileReader();
                     reader.onload = (e) => {
@@ -247,7 +847,6 @@
                     videoPreview.src = url;
                     videoPreview.classList.add('show');
                 }
-                uploadBtn.disabled = false;
             } else {
                 fileNameDisplay.textContent = "No file selected";
                 imagePreview.classList.remove('show');
@@ -256,258 +855,552 @@
             }
         });
 
-        // UPLOAD TO CLOUDINARY
-        uploadBtn.addEventListener('click', async () => {
+        // Upload button click handler
+        uploadBtn.addEventListener('click', uploadMedia);
+
+        // Upload media function
+        async function uploadMedia() {
             if (!currentUser) {
                 alert("Please sign in to upload media.");
                 return;
             }
+            
             const file = fileInput.files[0];
             if (!file) {
                 alert("Please select a file to upload.");
                 return;
             }
+            
             if (file.size > 10 * 1024 * 1024) {
                 alert("File size exceeds 10MB limit. Please choose a smaller file.");
                 return;
             }
+            
             loadingSpinner.style.display = 'block';
             uploadBtn.disabled = true;
+            
             try {
-                const formData = new FormData();
-                formData.append("file", file);
-                formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
-                formData.append("folder", "jennix_gallery");
-                const response = await axios.post(CLOUDINARY_URL, formData, { headers: { "X-Requested-With": "XMLHttpRequest" } });
-                const fileURL = response.data.secure_url;
-                const resourceType = response.data.resource_type; // image or video
-                const mediaObj = {
-                    id: uuidv4(),
-                    userId: currentUser.uid,
-                    username: currentUser.username,
-                    caption: captionText.value.trim(),
-                    fileURL,
-                    fileType: resourceType,
-                    fileName: file.name,
-                    timestamp: new Date().toISOString(),
-                    likes: 0,
-                    likedBy: [],
-                    views: 0,
-                    comments: []
-                };
-                // Save to gallery (localStorage for demo, vervang door backend voor productie)
-                const allItems = JSON.parse(localStorage.getItem('jennix_gallery') || '[]');
-                allItems.unshift(mediaObj);
-                localStorage.setItem('jennix_gallery', JSON.stringify(allItems));
-                // Reset form
-                fileInput.value = '';
-                fileNameDisplay.textContent = "No file selected";
-                captionText.value = '';
-                imagePreview.classList.remove('show');
-                videoPreview.classList.remove('show');
-                loadingSpinner.style.display = 'none';
-                uploadBtn.disabled = false;
-                loadGalleryContent();
-                alert("Upload successful!");
-            } catch (err) {
-                console.error(err);
-                alert("Upload failed: " + (err.response?.data?.error?.message || err.message));
+                const storageRef = ref(storage, `gallery/${currentUser.uid}/${Date.now()}_${file.name}`);
+                const uploadTask = uploadBytesResumable(storageRef, file);
+                
+                uploadTask.on('state_changed', 
+                    (snapshot) => {
+                        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                        console.log('Upload is ' + progress + '% done');
+                    },
+                    (error) => {
+                        console.error("Upload failed:", error);
+                        alert("Upload failed: " + error.message);
+                        loadingSpinner.style.display = 'none';
+                        uploadBtn.disabled = false;
+                    },
+                    async () => {
+                        try {
+                            const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+                            
+                            await addDoc(collection(db, "gallery"), {
+                                userId: currentUser.uid,
+                                username: currentUser.username,
+                                caption: captionText.value.trim(),
+                                fileURL: downloadURL,
+                                fileType: file.type.startsWith('image/') ? 'image' : 'video',
+                                fileName: file.name,
+                                timestamp: new Date(),
+                                likes: 0,
+                                likedBy: [],
+                                views: 0,
+                                comments: 0
+                            });
+                            
+                            fileInput.value = '';
+                            fileNameDisplay.textContent = "No file selected";
+                            captionText.value = '';
+                            imagePreview.classList.remove('show');
+                            videoPreview.classList.remove('show');
+                            
+                            loadingSpinner.style.display = 'none';
+                            uploadBtn.disabled = false;
+                            
+                            loadGalleryContent();
+                            
+                            alert("Upload successful!");
+                        } catch (error) {
+                            console.error("Error adding document:", error);
+                            alert("Error saving media data: " + error.message);
+                            loadingSpinner.style.display = 'none';
+                            uploadBtn.disabled = false;
+                        }
+                    }
+                );
+            } catch (error) {
+                console.error("Upload error:", error);
+                alert("Upload error: " + error.message);
                 loadingSpinner.style.display = 'none';
                 uploadBtn.disabled = false;
             }
-        });
-
-        // GALLERY LOGIC
-        function loadGalleryContent() {
-            loadingSpinner.style.display = 'block';
-            setTimeout(() => {
-                let data = JSON.parse(localStorage.getItem('jennix_gallery') || '[]');
-                if (currentView === 'photos') {
-                    data = data.filter(m => m.fileType === 'image');
-                } else if (currentView === 'videos') {
-                    data = data.filter(m => m.fileType === 'video');
-                } else if (currentView === 'liked' && currentUser) {
-                    data = data.filter(m => userLikes.includes(m.id));
-                }
-                if (currentSort === 'recent') {
-                    data.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-                } else if (currentSort === 'popular') {
-                    data.sort((a, b) => (b.likes ?? 0) - (a.likes ?? 0));
-                } else if (currentSort === 'views') {
-                    data.sort((a, b) => (b.views ?? 0) - (a.views ?? 0));
-                }
-                mediaItems = data;
-                renderGallery();
-                loadingSpinner.style.display = 'none';
-            }, 300);
         }
 
+        // Load gallery content based on current sort and view settings
+        async function loadGalleryContent() {
+            loadingSpinner.style.display = 'block';
+            galleryGrid.innerHTML = '';
+            
+            try {
+                let q;
+                
+                if (currentView === 'photos') {
+                    q = query(
+                        collection(db, "gallery"),
+                        where("fileType", "==", "image")
+                    );
+                } else if (currentView === 'videos') {
+                    q = query(
+                        collection(db, "gallery"),
+                        where("fileType", "==", "video")
+                    );
+                } else if (currentView === 'liked' && currentUser) {
+                    const likedItems = await Promise.all(
+                        userLikes.map(async (id) => {
+                            const docRef = doc(db, "gallery", id);
+                            const docSnap = await getDoc(docRef);
+                            if (docSnap.exists()) {
+                                return { id: docSnap.id, ...docSnap.data() };
+                            }
+                            return null;
+                        })
+                    );
+                    
+                    mediaItems = likedItems.filter(item => item !== null);
+                    
+                    if (currentSort === 'recent') {
+                        mediaItems.sort((a, b) => b.timestamp.toDate() - a.timestamp.toDate());
+                    } else if (currentSort === 'popular') {
+                        mediaItems.sort((a, b) => b.likes - a.likes);
+                    } else if (currentSort === 'views') {
+                        mediaItems.sort((a, b) => b.views - a.views);
+                    }
+                    
+                    renderGallery();
+                    loadingSpinner.style.display = 'none';
+                    return;
+                } else {
+                    q = query(collection(db, "gallery"));
+                }
+                
+                if (currentSort === 'recent') {
+                    q = query(q, orderBy("timestamp", "desc"));
+                } else if (currentSort === 'popular') {
+                    q = query(q, orderBy("likes", "desc"));
+                } else if (currentSort === 'views') {
+                    q = query(q, orderBy("views", "desc"));
+                }
+                
+                const querySnapshot = await getDocs(q);
+                
+                mediaItems = [];
+                querySnapshot.forEach((doc) => {
+                    mediaItems.push({ id: doc.id, ...doc.data() });
+                });
+                
+                renderGallery();
+                
+            } catch (error) {
+                console.error("Error loading gallery:", error);
+                alert("Error loading gallery: " + error.message);
+            } finally {
+                loadingSpinner.style.display = 'none';
+            }
+        }
+
+        // Render gallery based on mediaItems array
         function renderGallery() {
             galleryGrid.innerHTML = '';
-            if (!mediaItems.length) {
+            
+            if (mediaItems.length === 0) {
                 noContentMessage.style.display = 'block';
                 return;
             }
+            
             noContentMessage.style.display = 'none';
-            mediaItems.forEach(item => {
-                const div = document.createElement('div');
-                div.className = 'gallery-item';
-                div.onclick = () => openMediaModal(item.id);
+            
+            mediaItems.forEach((item) => {
+                const galleryItem = document.createElement('div');
+                galleryItem.classList.add('gallery-item');
+                galleryItem.dataset.id = item.id;
+                
                 if (item.fileType === 'image') {
-                    div.innerHTML = `<img src="${item.fileURL}" alt="gallery">`;
-                } else if (item.fileType === 'video') {
-                    div.innerHTML = `<video src="${item.fileURL}" muted preload="metadata"></video>`;
+                    const img = document.createElement('img');
+                    img.src = item.fileURL;
+                    img.alt = item.caption || 'Gallery image';
+                    img.loading = 'lazy';
+                    galleryItem.appendChild(img);
+                } else {
+                    const video = document.createElement('video');
+                    video.src = item.fileURL;
+                    video.preload = 'metadata';
+                    galleryItem.appendChild(video);
+                    
+                    const playOverlay = document.createElement('div');
+                    playOverlay.classList.add('play-overlay');
+                    playOverlay.innerHTML = '▶';
+                    galleryItem.appendChild(playOverlay);
                 }
-                div.innerHTML += `
-                    <div class="gallery-item-overlay">
-                        <div class="gallery-item-info">
-                            <span>${item.username}</span><br>
-                            <span>${item.caption ? item.caption : ''}</span>
-                        </div>
-                        <div class="gallery-item-actions">
-                            <button class="like-btn${userLikes.includes(item.id) ? ' liked' : ''}" onclick="event.stopPropagation(); toggleLike('${item.id}')">
-                                <span>♡</span> <span>${item.likes}</span>
-                            </button>
-                            <button class="comment-btn" onclick="event.stopPropagation(); openMediaModal('${item.id}', true)">
-                                💬 <span>${item.comments?.length || 0}</span>
-                            </button>
-                        </div>
-                    </div>
-                `;
-                galleryGrid.appendChild(div);
-            });
-        }
-
-        // Likes
-        window.toggleLike = function(mediaId) {
-            let allItems = JSON.parse(localStorage.getItem('jennix_gallery') || '[]');
-            let idx = allItems.findIndex(m => m.id === mediaId);
-            if (idx === -1) return;
-            if (!currentUser) {
-                alert("Sign in first!");
-                return;
-            }
-            if (!allItems[idx].likedBy) allItems[idx].likedBy = [];
-            if (!allItems[idx].likes) allItems[idx].likes = 0;
-            if (!userLikes.includes(mediaId)) {
-                allItems[idx].likedBy.push(currentUser.uid);
-                allItems[idx].likes++;
-                userLikes.push(mediaId);
-            } else {
-                allItems[idx].likedBy = allItems[idx].likedBy.filter(uid => uid !== currentUser.uid);
-                allItems[idx].likes--;
-                userLikes = userLikes.filter(id => id !== mediaId);
-            }
-            localStorage.setItem('jennix_gallery', JSON.stringify(allItems));
-            localStorage.setItem('jennix_likes', JSON.stringify(userLikes));
-            loadGalleryContent();
-        };
-
-        // MODAL
-        function openMediaModal(mediaId, focusComment=false) {
-            const item = mediaItems.find(m => m.id === mediaId);
-            if (!item) return;
-            currentMediaId = mediaId;
-            modalMediaContainer.innerHTML = '';
-            if (item.fileType === 'image') {
-                modalMediaContainer.innerHTML = `<img src="${item.fileURL}" alt="media" style="width:100%;">`;
-            } else if (item.fileType === 'video') {
-                modalMediaContainer.innerHTML = `<video src="${item.fileURL}" controls style="width:100%;"></video>`;
-            }
-            // Comments
-            commentsArea.innerHTML = '';
-            (item.comments || []).forEach(c => {
-                commentsArea.innerHTML += `
-                    <div class="comment">
-                        <div class="comment-header">
-                            <span class="comment-username">${c.username}</span>
-                            <span class="comment-timestamp">${(new Date(c.timestamp)).toLocaleString()}</span>
-                        </div>
-                        <div class="comment-text">${c.text}</div>
-                    </div>
-                `;
-            });
-            // Modal stats
-            modalLikeBtn.querySelector('.like-count').textContent = item.likes || 0;
-            modalLikeBtn.classList.toggle('liked', userLikes.includes(item.id));
-            document.querySelector('.modal-stats .view-count').textContent = `${item.views || 0} views`;
-            document.querySelector('.modal-stats .upload-date').textContent = (new Date(item.timestamp)).toLocaleString();
-            commentInput.value = '';
-            commentInput.disabled = !currentUser;
-            commentSubmit.disabled = !currentUser;
-            if (focusComment && currentUser) commentInput.focus();
-            mediaModal.classList.add('show');
-            // Count view
-            let allItems = JSON.parse(localStorage.getItem('jennix_gallery') || '[]');
-            let idx = allItems.findIndex(m => m.id === mediaId);
-            if (idx !== -1) {
-                if (!allItems[idx].views) allItems[idx].views = 0;
-                allItems[idx].views++;
-                localStorage.setItem('jennix_gallery', JSON.stringify(allItems));
-            }
-            loadGalleryContent();
-        }
-        document.querySelector('.close-modal').onclick = () => {
-            mediaModal.classList.remove('show');
-        };
-        modalLikeBtn.onclick = () => {
-            if (currentMediaId) window.toggleLike(currentMediaId);
-            setTimeout(() => openMediaModal(currentMediaId), 100);
-        };
-        commentSubmit.onclick = () => {
-            if (!currentUser) {
-                alert("Sign in first!");
-                return;
-            }
-            const text = commentInput.value.trim();
-            if (!text) return;
-            let allItems = JSON.parse(localStorage.getItem('jennix_gallery') || '[]');
-            let idx = allItems.findIndex(m => m.id === currentMediaId);
-            if (idx !== -1) {
-                if (!allItems[idx].comments) allItems[idx].comments = [];
-                allItems[idx].comments.push({
-                    username: currentUser.username,
-                    text,
-                    timestamp: new Date().toISOString()
+                
+                const overlay = document.createElement('div');
+                overlay.classList.add('gallery-item-overlay');
+                
+                const info = document.createElement('div');
+                info.classList.add('gallery-item-info');
+                info.textContent = item.username || 'Anonymous';
+                
+                const actions = document.createElement('div');
+                actions.classList.add('gallery-item-actions');
+                
+                const likeBtn = document.createElement('button');
+                likeBtn.classList.add('like-btn');
+                likeBtn.innerHTML = `<span>♡</span> <span>${item.likes || 0}</span>`;
+                
+                if (currentUser && userLikes.includes(item.id)) {
+                    likeBtn.classList.add('liked');
+                    likeBtn.querySelector('span:first-child').textContent = '♥';
+                }
+                
+                const commentBtn = document.createElement('button');
+                commentBtn.classList.add('comment-btn');
+                commentBtn.innerHTML = `<span>💬</span> <span>${item.comments || 0}</span>`;
+                
+                actions.appendChild(likeBtn);
+                actions.appendChild(commentBtn);
+                
+                overlay.appendChild(info);
+                overlay.appendChild(actions);
+                
+                galleryItem.appendChild(overlay);
+                
+                galleryItem.addEventListener('click', (e) => {
+                    if (e.target.closest('.like-btn') || e.target.closest('.comment-btn')) {
+                        return;
+                    }
+                    openMediaModal(item);
                 });
-                localStorage.setItem('jennix_gallery', JSON.stringify(allItems));
-                openMediaModal(currentMediaId);
+                
+                likeBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    toggleLike(item.id);
+                });
+                
+                commentBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    openMediaModal(item, true);
+                });
+                
+                galleryGrid.appendChild(galleryItem);
+            });
+        }
+
+        // Open media modal
+        async function openMediaModal(item, focusComments = false) {
+            currentMediaId = item.id;
+            
+            if (currentUser) {
+                await updateDoc(doc(db, "gallery", item.id), {
+                    views: increment(1)
+                });
             }
-        };
-        // Sort/view controls
-        sortButtons.forEach(btn => btn.onclick = e => {
-            sortButtons.forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            currentSort = btn.dataset.sort;
-            loadGalleryContent();
+            
+            const modalTitle = document.querySelector('.modal-title');
+            modalTitle.textContent = item.caption || 'Media Details';
+            
+            modalMediaContainer.innerHTML = '';
+            
+            if (item.fileType === 'image') {
+                const img = document.createElement('img');
+                img.src = item.fileURL;
+                img.alt = item.caption || 'Gallery image';
+                modalMediaContainer.appendChild(img);
+            } else {
+                const video = document.createElement('video');
+                video.src = item.fileURL;
+                video.controls = true;
+                video.autoplay = true;
+                modalMediaContainer.appendChild(video);
+            }
+            
+            modalLikeBtn.querySelector('.like-count').textContent = item.likes || 0;
+            
+            if (currentUser && userLikes.includes(item.id)) {
+                modalLikeBtn.classList.add('liked');
+                modalLikeBtn.querySelector('.like-icon').textContent = '♥';
+            } else {
+                modalLikeBtn.classList.remove('liked');
+                modalLikeBtn.querySelector('.like-icon').textContent = '♡';
+            }
+            
+            document.querySelector('.view-count').textContent = `${item.views || 0} views`;
+            document.querySelector('.upload-date').textContent = formatDate(item.timestamp.toDate());
+            
+            loadComments(item.id);
+            
+            mediaModal.classList.add('show');
+            
+            modalLikeBtn.onclick = () => toggleLike(item.id);
+            
+            if (focusComments && currentUser) {
+                commentInput.focus();
+            }
+        }
+
+        // Load comments for a media item
+        async function loadComments(mediaId) {
+            commentsArea.innerHTML = '';
+            
+            try {
+                const q = query(
+                    collection(db, "comments"),
+                    where("mediaId", "==", mediaId),
+                    orderBy("timestamp", "desc")
+                );
+                
+                const querySnapshot = await getDocs(q);
+                
+                if (querySnapshot.empty) {
+                    commentsArea.innerHTML = '<p>No comments yet. Be the first to comment!</p>';
+                    return;
+                }
+                
+                querySnapshot.forEach((doc) => {
+                    const comment = doc.data();
+                    const commentEl = document.createElement('div');
+                    commentEl.classList.add('comment');
+                    
+                    const commentHeader = document.createElement('div');
+                    commentHeader.classList.add('comment-header');
+                    
+                    const username = document.createElement('span');
+                    username.classList.add('comment-username');
+                    username.textContent = comment.username;
+                    
+                    const timestamp = document.createElement('span');
+                    timestamp.classList.add('comment-timestamp');
+                    timestamp.textContent = formatDate(comment.timestamp.toDate());
+                    
+                    commentHeader.appendChild(username);
+                    commentHeader.appendChild(timestamp);
+                    
+                    const commentText = document.createElement('p');
+                    commentText.classList.add('comment-text');
+                    commentText.textContent = comment.text;
+                    
+                    commentEl.appendChild(commentHeader);
+                    commentEl.appendChild(commentText);
+                    
+                    commentsArea.appendChild(commentEl);
+                });
+            } catch (error) {
+                console.error("Error loading comments:", error);
+                commentsArea.innerHTML = '<p>Error loading comments.</p>';
+            }
+        }
+
+        // Comment submit handler
+        commentSubmit.addEventListener('click', async () => {
+            if (!currentUser) {
+                alert("Please sign in to comment.");
+                return;
+            }
+            
+            const commentStr = commentInput.value.trim();
+            if (!commentStr) return;
+            
+            try {
+                await addDoc(collection(db, "comments"), {
+                    mediaId: currentMediaId,
+                    userId: currentUser.uid,
+                    username: currentUser.username,
+                    text: commentStr,
+                    timestamp: new Date()
+                });
+                
+                await updateDoc(doc(db, "gallery", currentMediaId), {
+                    comments: increment(1)
+                });
+                
+                commentInput.value = '';
+                loadComments(currentMediaId);
+                loadGalleryContent();
+            } catch (error) {
+                console.error("Error adding comment:", error);
+                alert("Error adding comment: " + error.message);
+            }
         });
-        viewButtons.forEach(btn => btn.onclick = e => {
-            viewButtons.forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            currentView = btn.dataset.view;
-            loadGalleryContent();
+
+        // Toggle like on a media item
+        async function toggleLike(mediaId) {
+            if (!currentUser) {
+                alert("Please sign in to like media.");
+                return;
+            }
+            
+            try {
+                const mediaRef = doc(db, "gallery", mediaId);
+                const userRef = doc(db, "users", currentUser.uid);
+                
+                const hasLiked = userLikes.includes(mediaId);
+                
+                if (hasLiked) {
+                    await updateDoc(mediaRef, {
+                        likes: increment(-1),
+                        likedBy: arrayRemove(currentUser.uid)
+                    });
+                    
+                    await updateDoc(userRef, {
+                        likes: arrayRemove(mediaId)
+                    });
+                    
+                    userLikes = userLikes.filter(id => id !== mediaId);
+                } else {
+                    await updateDoc(mediaRef, {
+                        likes: increment(1),
+                        likedBy: arrayUnion(currentUser.uid)
+                    });
+                    
+                    await updateDoc(userRef, {
+                        likes: arrayUnion(mediaId)
+                    });
+                    
+                    userLikes.push(mediaId);
+                }
+                
+                loadGalleryContent();
+                
+                if (mediaModal.classList.contains('show') && currentMediaId === mediaId) {
+                    modalLikeBtn.querySelector('.like-count').textContent = hasLiked ? 
+                        parseInt(modalLikeBtn.querySelector('.like-count').textContent) - 1 :
+                        parseInt(modalLikeBtn.querySelector('.like-count').textContent) + 1;
+                    
+                    if (hasLiked) {
+                        modalLikeBtn.classList.remove('liked');
+                        modalLikeBtn.querySelector('.like-icon').textContent = '♡';
+                    } else {
+                        modalLikeBtn.classList.add('liked');
+                        modalLikeBtn.querySelector('.like-icon').textContent = '♥';
+                    }
+                }
+                
+            } catch (error) {
+                console.error("Error toggling like:", error);
+                alert("Error toggling like: " + error.message);
+            }
+        }
+
+        // Fetch user likes
+        async function fetchUserLikes() {
+            if (!currentUser) {
+                userLikes = [];
+                return;
+            }
+            
+            try {
+                const userDoc = await getDoc(doc(db, "users", currentUser.uid));
+                if (userDoc.exists() && userDoc.data().likes) {
+                    userLikes = userDoc.data().likes;
+                } else {
+                    userLikes = [];
+                }
+            } catch (error) {
+                console.error("Error fetching user likes:", error);
+                userLikes = [];
+            }
+        }
+
+        // Sort and view button handlers
+        sortButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                sortButtons.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentSort = btn.dataset.sort;
+                loadGalleryContent();
+            });
         });
-        // Modal close on background click
-        window.onclick = function(event) {
-            if (event.target === mediaModal) mediaModal.classList.remove('show');
-            if (event.target === document.getElementById('signInModal')) closeSignInModal();
-            if (event.target === document.getElementById('signUpModal')) closeSignUpModal();
+        
+        viewButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (btn.dataset.view === 'liked' && !currentUser) {
+                    alert("Please sign in to view your liked media.");
+                    return;
+                }
+                viewButtons.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentView = btn.dataset.view;
+                loadGalleryContent();
+            });
+        });
+
+        document.querySelector('.close-modal').addEventListener('click', () => {
+            mediaModal.classList.remove('show');
+            currentMediaId = null;
+        });
+
+        function formatDate(date) {
+            const now = new Date();
+            const diff = Math.floor((now - date) / 1000);
+            
+            if (diff < 60) {
+                return 'Just now';
+            } else if (diff < 3600) {
+                const minutes = Math.floor(diff / 60);
+                return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+            } else if (diff < 86400) {
+                const hours = Math.floor(diff / 3600);
+                return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+            } else if (diff < 2592000) {
+                const days = Math.floor(diff / 86400);
+                return `${days} day${days > 1 ? 's' : ''} ago`;
+            } else {
+                return date.toLocaleDateString();
+            }
+        }
+
+        // Modal functions for sign in/sign up
+        window.openSignInModal = () => {
+            document.getElementById("signInModal").style.display = "flex";
+            document.getElementById("signInEmail").focus();
         };
-        // SignIn/SignUp Modal functions
-        function openSignInModal()  { document.getElementById('signInModal').classList.add('show'); }
-        function closeSignInModal() { document.getElementById('signInModal').classList.remove('show'); }
-        function openSignUpModal()  { document.getElementById('signUpModal').classList.add('show'); }
-        function closeSignUpModal() { document.getElementById('signUpModal').classList.remove('show'); }
-        function switchToSignUp()   { closeSignInModal(); openSignUpModal(); }
-        function switchToSignIn()   { closeSignUpModal(); openSignInModal(); }
-        window.openSignInModal = openSignInModal;
-        window.closeSignInModal = closeSignInModal;
-        window.openSignUpModal = openSignUpModal;
-        window.closeSignUpModal = closeSignUpModal;
-        window.switchToSignUp = switchToSignUp;
-        window.switchToSignIn = switchToSignIn;
-        // Initial load
-        loadGalleryContent();
+        
+        window.closeSignInModal = () => {
+            document.getElementById("signInModal").style.display = "none";
+        };
+        
+        window.openSignUpModal = () => {
+            document.getElementById("signUpModal").style.display = "flex";
+            document.getElementById("signUpUsername").focus();
+        };
+        
+        window.closeSignUpModal = () => {
+            document.getElementById("signUpModal").style.display = "none";
+        };
+        
+        window.switchToSignUp = () => {
+            closeSignInModal();
+            openSignUpModal();
+        };
+        
+        window.switchToSignIn = () => {
+            closeSignUpModal();
+            openSignInModal();
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            window.addEventListener('click', (e) => {
+                if (e.target === mediaModal) {
+                    mediaModal.classList.remove('show');
+                    currentMediaId = null;
+                }
+                if (e.target.classList.contains('modal') && !e.target.querySelector('.modal-content').contains(e.target)) {
+                    e.target.style.display = 'none';
+                }
+            });
+        });
     </script>
 </body>
 </html>
