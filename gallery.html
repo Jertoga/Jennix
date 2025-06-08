@@ -1003,6 +1003,66 @@ const cloudinary = {
             }
         }
 
+        // Modal functions
+function openSignInModal() {
+    document.getElementById('signInModal').classList.add('show');
+}
+
+function closeSignInModal() {
+    document.getElementById('signInModal').classList.remove('show');
+}
+
+function openSignUpModal() {
+    document.getElementById('signUpModal').classList.add('show');
+}
+
+function closeSignUpModal() {
+    document.getElementById('signUpModal').classList.remove('show');
+}
+
+function switchToSignUp() {
+    closeSignInModal();
+    openSignUpModal();
+}
+
+function switchToSignIn() {
+    closeSignUpModal();
+    openSignInModal();
+}
+
+// Function to fetch user likes
+async function fetchUserLikes() {
+    if (!currentUser) return;
+    
+    try {
+        const userLikesDoc = await getDoc(doc(db, "users", currentUser.uid));
+        if (userLikesDoc.exists() && userLikesDoc.data().likes) {
+            userLikes = userLikesDoc.data().likes;
+        } else {
+            userLikes = [];
+        }
+    } catch (error) {
+        console.error("Error fetching user likes:", error);
+        userLikes = [];
+    }
+}
+
+        // Add modal close handlers
+document.querySelectorAll('.close-btn, .close-modal').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.classList.remove('show');
+        });
+    });
+});
+
+// Close modals when clicking outside
+window.addEventListener('click', (e) => {
+    if (e.target.classList.contains('modal')) {
+        e.target.classList.remove('show');
+    }
+});
+
         // Comment functionality
 async function submitComment() {
     if (!currentUser || !currentMediaId) {
