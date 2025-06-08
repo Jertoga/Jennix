@@ -1441,30 +1441,30 @@ commentInput.addEventListener('keypress', (e) => {
         }
 
         // Modal functions for sign in/sign up
-        function openSignInModal = () => {
+        window.openSignInModal = () => {
             document.getElementById("signInModal").style.display = "flex";
             document.getElementById("signInEmail").focus();
         };
         
-        function closeSignInModal = () => {
+        window.closeSignInModal = () => {
             document.getElementById("signInModal").style.display = "none";
         };
         
-        function openSignUpModal = () => {
+        window.openSignUpModal = () => {
             document.getElementById("signUpModal").style.display = "flex";
             document.getElementById("signUpUsername").focus();
         };
         
-        function closeSignUpModal = () => {
+        window.closeSignUpModal = () => {
             document.getElementById("signUpModal").style.display = "none";
         };
         
-        function switchToSignUp = () => {
+        window.switchToSignUp = () => {
             closeSignInModal();
             openSignUpModal();
         };
         
-        function switchToSignIn = () => {
+        window.switchToSignIn = () => {
             closeSignUpModal();
             openSignInModal();
         };
