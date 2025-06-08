@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+h<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -824,37 +824,37 @@
         };
 
         // File input change handler
-        fileInput.addEventListener('change', () => {
-            const file = fileInput.files[0];
-            
-            if (file) {
-                fileNameDisplay.textContent = file.name;
-                
-                // Reset previews
-                imagePreview.classList.remove('show');
-                videoPreview.classList.remove('show');
-                
-                // Check file type and show appropriate preview
-                if (file.type.startsWith('image/')) {
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        imagePreview.src = e.target.result;
-                        imagePreview.classList.add('show');
-                    };
-                    reader.readAsDataURL(file);
-                } else if (file.type.startsWith('video/')) {
-                    const url = URL.createObjectURL(file);
-                    videoPreview.src = url;
-                    videoPreview.classList.add('show');
-                }
-            } else {
-                fileNameDisplay.textContent = "No file selected";
-                imagePreview.classList.remove('show');
-                videoPreview.classList.remove('show');
-                uploadBtn.disabled = true;
-            }
-        });
-
+fileInput.addEventListener('change', () => {
+    const file = fileInput.files[0];
+    
+    if (file) {
+        fileNameDisplay.textContent = file.name;
+        uploadBtn.disabled = false;  // Enable de upload knop wanneer er een file is
+        
+        // Reset previews
+        imagePreview.classList.remove('show');
+        videoPreview.classList.remove('show');
+        
+        // Check file type and show appropriate preview
+        if (file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                imagePreview.src = e.target.result;
+                imagePreview.classList.add('show');
+            };
+            reader.readAsDataURL(file);
+        } else if (file.type.startsWith('video/')) {
+            const url = URL.createObjectURL(file);
+            videoPreview.src = url;
+            videoPreview.classList.add('show');
+        }
+    } else {
+        fileNameDisplay.textContent = "No file selected";
+        imagePreview.classList.remove('show');
+        videoPreview.classList.remove('show');
+        uploadBtn.disabled = true;
+    }
+});
         // Upload button click handler
         uploadBtn.addEventListener('click', uploadMedia);
 
@@ -1156,10 +1156,9 @@
             
             try {
                 const q = query(
-                    collection(db, "comments"),
-                    where("mediaId", "==", mediaId),
-                    orderBy("timestamp", "desc")
-                );
+    collection(db, `gallery/${mediaId}/comments`),
+    orderBy("timestamp", "desc")
+);
                 
                 const querySnapshot = await getDocs(q);
                 
@@ -1213,7 +1212,7 @@
             if (!commentStr) return;
             
             try {
-                await addDoc(collection(db, "comments"), {
+               await addDoc(collection(db, `gallery/${currentMediaId}/comments`), {
                     mediaId: currentMediaId,
                     userId: currentUser.uid,
                     username: currentUser.username,
