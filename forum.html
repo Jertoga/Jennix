@@ -62,7 +62,6 @@
             overflow-y: auto; /* Only scrollbar for comments */
             overflow-x: hidden; /* Hide horizontal scrollbar */
             margin-bottom: 0; 
-            padding-bottom: 15px; /* Consistent spacing below last post before input area */
             box-sizing: border-box; /* Include padding in height calculation */
         }
 
@@ -287,6 +286,14 @@
             header {
                 /* Displayed by default, transformed by JS */
                 width: 100%; /* Ensure it takes full width */
+                /* Added class for mobile hide/show */
+                transition: transform 0.3s ease-out, visibility 0.3s ease-out;
+            }
+
+            header.mobile-hidden {
+                transform: translateY(-100%);
+                visibility: hidden;
+                pointer-events: none;
             }
 
             #forumSection {
@@ -303,19 +310,12 @@
                 margin-bottom: 10px; /* Minimal bottom margin */
                 flex-shrink: 0; /* Prevent from shrinking */
                 padding: 0; /* Ensure no extra padding */
-                transition: transform 0.3s ease-out; /* Smooth transition for shifting */
+                /* Added class for mobile shift */
+                transition: transform 0.3s ease-out, background-color 0.3s ease-out, padding 0.3s ease-out;
+                position: relative; /* Default state */
             }
 
-            /* Class to move header out of view when keyboard is active */
-            .header-hidden {
-                transform: translateY(-100%); /* Move header up by its full height */
-                position: absolute; /* Take out of flow */
-                visibility: hidden; /* Hide content from screen readers and interaction */
-                pointer-events: none; /* Disable clicks */
-            }
-
-            /* Class to shift h2 up to the top when keyboard is active */
-            .h2-shifted-mobile {
+            h2.mobile-shifted {
                 position: fixed; /* Fix to top of viewport */
                 top: 0;
                 left: 0;
@@ -561,12 +561,20 @@
             
             // On desktop, ensure there's enough padding at the bottom so the last comment isn't hidden
             if (!isMobileDevice()) {
-                // Calculate minimum padding needed for last comment to be above sticky input area
-                const minPaddingForLastComment = postInputArea.offsetHeight + 30; // 30px is a bit of buffer
-                postsDiv.style.paddingBottom = `${minPaddingForLastComment}px`;
+                const commentMarginBottom = 15; // Corresponds to .post margin-bottom
+                const inputAreaHeight = postInputArea.offsetHeight;
+                const postTextMarginBottom = parseFloat(getComputedStyle(postText).marginBottom); // 15px by default
+                const postInputAreaPadding = parseFloat(getComputedStyle(postInputArea).paddingTop) + parseFloat(getComputedStyle(postInputArea).paddingBottom); // 15px + 15px = 30px
+                
+                // Calculate padding needed to match the 15px margin-bottom of a post
+                // post-input-area's height already includes its padding, and postText's margin-bottom
+                // We want the bottom of the last post to be 15px from the top of the post-input-area content
+                const requiredPadding = commentMarginBottom; 
+                
+                postsDiv.style.paddingBottom = `${requiredPadding + inputAreaHeight}px`; // Add input area height so it's above it
             } else {
-                // Reset for mobile, as dynamic height calculation handles it
-                postsDiv.style.paddingBottom = `15px`; // Original mobile padding
+                // Reset for mobile, as dynamic height calculation handles it better during keyboard events
+                postsDiv.style.paddingBottom = `15px`; // Default value, adjusted by JS for keyboard
             }
 
 
@@ -805,18 +813,32 @@
         
         // --- Mobile Layout Adjustments ---
         let visualViewportResizeListener = null;
+        let isHeaderVisible = true; // State to track header visibility on mobile
+
+        // Function to toggle mobile header visibility
+        const toggleMobileHeader = () => {
+            if (isMobileDevice()) {
+                mainHeader.classList.toggle('mobile-hidden');
+                communityForumH2.classList.toggle('mobile-shifted');
+                isHeaderVisible = !isHeaderVisible; // Update state
+                adjustForumLayout(); // Recalculate layout after toggle
+            }
+        };
+
+        // Add event listener to h2 for toggling
+        communityForumH2.addEventListener('click', toggleMobileHeader);
 
         const adjustForumLayout = () => {
             if (!isMobileDevice()) {
                 // Reset for desktop
-                mainHeader.classList.remove('header-hidden'); /* Ensure header is visible */
-                communityForumH2.classList.remove('h2-shifted-mobile'); /* Reset h2 position */
+                mainHeader.classList.remove('mobile-hidden'); /* Ensure header is visible */
+                communityForumH2.classList.remove('mobile-shifted'); /* Reset h2 position */
                 communityForumH2.style.fontSize = '2em'; /* Reset h2 font size */
                 communityForumH2.style.marginTop = 'auto'; /* Reset margins */
                 communityForumH2.style.marginBottom = 'auto'; /* Reset margins */
                 postInputArea.style.position = 'sticky';
                 postInputArea.style.bottom = '0';
-                // Handled in renderPosts for desktop: postsDiv.style.paddingBottom = '15px'; /* Default desktop padding */
+                // Padding bottom for postsDiv on desktop is now handled in renderPosts
                 postsDiv.style.height = 'auto'; /* Reset height for desktop to let flex-grow handle it */
                 postsDiv.style.maxHeight = 'unset'; /* Remove max-height constraint */
                 postInputArea.style.display = 'block'; /* Reset flexbox for desktop */
@@ -833,8 +855,6 @@
             }
 
             // Mobile Specific Logic
-            // Header and h2 are handled by classes based on keyboard state
-
             // Apply fixed position for mobile input area
             postInputArea.style.position = 'fixed';
             postInputArea.style.bottom = '0';
@@ -848,7 +868,7 @@
 
             // Function to set postsDiv height based on available screen space
             const setPostsHeight = () => {
-                const headerHeight = mainHeader.offsetHeight;
+                const headerHeight = isHeaderVisible ? mainHeader.offsetHeight : 0; // Only consider header height if visible
                 const h2Height = communityForumH2.offsetHeight;
                 const h2Style = getComputedStyle(communityForumH2);
                 const h2MarginTop = parseFloat(h2Style.marginTop);
@@ -861,23 +881,26 @@
                 const availableScreenHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
 
                 let spaceTakenAbovePosts = 0;
-                if (mainHeader.classList.contains('header-hidden')) {
-                    // Header is hidden, h2 is shifted to top
-                    spaceTakenAbovePosts = h2Height + h2MarginTop + h2MarginBottom; 
+                if (mainHeader.classList.contains('mobile-hidden') || !isHeaderVisible) {
+                    // Header is hidden, h2 is shifted to top, only h2 takes space at top of viewport
+                    spaceTakenAbovePosts = h2Height; // h2 is fixed and takes its own space
                 } else {
                     // Header is visible, h2 is below header
                     spaceTakenAbovePosts = headerHeight + h2Height + h2MarginTop + h2MarginBottom;
                 }
+                
+                // On mobile, the padding-bottom of postsDiv acts as the buffer between the last post and input area
+                const mobilePaddingBottom = buffer; 
 
                 const calculatedHeight = availableScreenHeight 
                                         - spaceTakenAbovePosts
-                                        - (inputAreaHeight + buffer)
+                                        - inputAreaHeight
                                         - forumSectionPaddingTop 
-                                        - forumSectionPaddingBottom;
+                                        - forumSectionPaddingBottom
+                                        - mobilePaddingBottom; // Account for the padding at the bottom of posts div
                 
                 postsDiv.style.height = `${Math.max(0, calculatedHeight)}px`; 
 
-                // Ensure it scrolls to bottom when height changes
                 postsDiv.scrollTo({
                     top: postsDiv.scrollHeight,
                     behavior: 'smooth'
@@ -896,8 +919,7 @@
                     
                     if (keyboardHeight > 0) { 
                         // Keyboard is open
-                        mainHeader.classList.add('header-hidden'); // Hide main header
-                        communityForumH2.classList.add('h2-shifted-mobile'); // Shift "Community Forum" to top
+                        // No automatic header hiding/shifting here, user controls via toggleMobileHeader
                         
                         // Scroll the input area into view *after* layout has settled
                         setTimeout(() => {
@@ -905,10 +927,9 @@
                         }, 50); 
                     } else { 
                         // Keyboard is closed
-                        mainHeader.classList.remove('header-hidden'); // Show main header
-                        communityForumH2.classList.remove('h2-shifted-mobile'); // Reset "Community Forum"
+                        // No automatic header showing/resetting here, user controls via toggleMobileHeader
                     }
-                    // Recalculate height based on current viewport and header/h2 visibility
+                    // Recalculate height based on current viewport and header/h2 visibility (which is controlled by isHeaderVisible state)
                     setPostsHeight(); 
                 };
                 window.visualViewport.addEventListener('resize', visualViewportResizeListener);
@@ -917,8 +938,7 @@
             // Fallback for devices without visualViewport (less precise, might show slight scroll issues)
             postText.addEventListener('focus', () => {
                 if (!window.visualViewport) {
-                    mainHeader.classList.add('header-hidden');
-                    communityForumH2.classList.add('h2-shifted-mobile');
+                    // No automatic header hiding/shifting here, user controls via toggleMobileHeader
                     setPostsHeight(); 
                     setTimeout(() => {
                         postInputArea.scrollIntoView({ behavior: 'smooth', block: 'end' });
@@ -928,19 +948,25 @@
 
             postText.addEventListener('blur', () => {
                 if (!window.visualViewport) {
-                    mainHeader.classList.remove('header-hidden');
-                    communityForumH2.classList.remove('h2-shifted-mobile');
+                    // No automatic header showing/resetting here, user controls via toggleMobileHeader
                     setPostsHeight(); 
                 }
             });
             
             // Initial call to setPostsHeight for correct layout on page load.
-            // This is crucial for non-visualViewport devices and ensures correct initial scroll position.
             setPostsHeight();
         };
 
         // Initial setup for mobile layout and on resize/orientationchange
-        document.addEventListener('DOMContentLoaded', adjustForumLayout);
+        document.addEventListener('DOMContentLoaded', () => {
+            adjustForumLayout();
+            // Set initial state for mobile header visibility if it's a mobile device
+            if (isMobileDevice()) {
+                mainHeader.classList.remove('mobile-hidden');
+                communityForumH2.classList.remove('mobile-shifted');
+                isHeaderVisible = true; // Ensure header is visible by default on mobile
+            }
+        });
         window.addEventListener('resize', adjustForumLayout);
         window.addEventListener('orientationchange', adjustForumLayout);
 
