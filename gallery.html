@@ -689,6 +689,13 @@
             measurementId: "G-HKJ85NVGF4"
         };
 
+       // Cloudinary config
+const cloudinary = {
+    cloud_name: 'dgwiny07o',
+    api_key: '458515823487253',
+    uploadPreset: 'jennix_gallery_upload'
+};
+
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
@@ -859,88 +866,72 @@
         uploadBtn.addEventListener('click', uploadMedia);
 
         // Upload media function
-        async function uploadMedia() {
-            if (!currentUser) {
-                alert("Please sign in to upload media.");
-                return;
-            }
-            
-            const file = fileInput.files[0];
-            if (!file) {
-                alert("Please select a file to upload.");
-                return;
-            }
-            
-            if (file.size > 10 * 1024 * 1024) {
-                alert("File size exceeds 10MB limit. Please choose a smaller file.");
-                return;
-            }
-            
-            loadingSpinner.style.display = 'block';
-            uploadBtn.disabled = true;
-            
-            try {
-                const storageRef = ref(storage, `gallery/${currentUser.uid}/${Date.now()}_${file.name}`);
-                const uploadTask = uploadBytesResumable(storageRef, file);
-                
-                uploadTask.on('state_changed', 
-                    (snapshot) => {
-                        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                        console.log('Upload is ' + progress + '% done');
-                    },
-                    (error) => {
-                        console.error("Upload failed:", error);
-                        alert("Upload failed: " + error.message);
-                        loadingSpinner.style.display = 'none';
-                        uploadBtn.disabled = false;
-                    },
-                    async () => {
-                        try {
-                            const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-                            
-                            await addDoc(collection(db, "gallery"), {
-                                userId: currentUser.uid,
-                                username: currentUser.username,
-                                caption: captionText.value.trim(),
-                                fileURL: downloadURL,
-                                fileType: file.type.startsWith('image/') ? 'image' : 'video',
-                                fileName: file.name,
-                                timestamp: new Date(),
-                                likes: 0,
-                                likedBy: [],
-                                views: 0,
-                                comments: 0
-                            });
-                            
-                            fileInput.value = '';
-                            fileNameDisplay.textContent = "No file selected";
-                            captionText.value = '';
-                            imagePreview.classList.remove('show');
-                            videoPreview.classList.remove('show');
-                            
-                            loadingSpinner.style.display = 'none';
-                            uploadBtn.disabled = false;
-                            
-                            loadGalleryContent();
-                            
-                            alert("Upload successful!");
-                        } catch (error) {
-                            console.error("Error adding document:", error);
-                            alert("Error saving media data: " + error.message);
-                            loadingSpinner.style.display = 'none';
-                            uploadBtn.disabled = false;
-                        }
-                    }
-                );
-            } catch (error) {
-                console.error("Upload error:", error);
-                alert("Upload error: " + error.message);
-                loadingSpinner.style.display = 'none';
-                uploadBtn.disabled = false;
-            }
+       async function uploadMedia() {
+    if (!currentUser) {
+        alert("Please sign in to upload media.");
+        return;
+    }
+    
+    const file = fileInput.files[0];
+    if (!file) {
+        alert("Please select a file to upload.");
+        return;
+    }
+    
+    if (file.size > 10 * 1024 * 1024) {
+        alert("File size exceeds 10MB limit. Please choose a smaller file.");
+        return;
+    }
+    
+    loadingSpinner.style.display = 'block';
+    uploadBtn.disabled = true;
+    
+    try {
+        // Create form data for Cloudinary upload
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('upload_preset', cloudinary.uploadPreset);
+        formData.append('cloud_name', cloudinary.cloud_name);
+        
+        // Upload to Cloudinary
+        const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudinary.cloud_name}/auto/upload`, {
+            method: 'POST',
+            body: formData
+        });
+        
+        if (!response.ok) {
+            throw new Error('Upload to Cloudinary failed');
         }
-
-        // Load gallery content based on current sort and view settings
+        
+        const data = await response.json();
+        
+        // Save to Firebase database with Cloudinary URL
+        await addDoc(collection(db, "gallery"), {
+            userId: currentUser.uid,
+            username: currentUser.username,
+            caption: captionText.value.trim(),
+            fileURL: data.secure_url,
+            fileType: file.type.startsWith('image/') ? 'image' : 'video',
+            fileName: file.name,
+            timestamp: new Date(),
+            likes: 0,
+            likedBy: [],
+            views: 0,
+            comments: 0,
+            cloudinaryPublicId: data.public_id // Store Cloudinary public ID for future reference
+        });
+        
+        // Reset form
+        fileInput.value = '';
+        fileNameDisplay.textContent = "No file selected";
+        captionText.value = '';
+        imagePreview.classList.remove('show');
+        videoPreview.classList.remove('show');
+        
+        loadingSpinner.style.display = 'none';
+        uploadBtn.disabled = false;
+        
+         // Load gallery content based on current sort and view settings
         async function loadGalleryContent() {
             loadingSpinner.style.display = 'block';
             galleryGrid.innerHTML = '';
@@ -1011,6 +1002,94 @@
                 loadingSpinner.style.display = 'none';
             }
         }
+
+        // Comment functionality
+async function submitComment() {
+    if (!currentUser || !currentMediaId) {
+        alert("Please sign in to comment");
+        return;
+    }
+    
+    const commentText = commentInput.value.trim();
+    if (!commentText) return;
+    
+    commentSubmit.disabled = true;
+    
+    try {
+        // Create comment in subcollection
+        await addDoc(collection(db, `gallery/${currentMediaId}/comments`), {
+            userId: currentUser.uid,
+            username: currentUser.username,
+            text: commentText,
+            timestamp: new Date()
+        });
+
+        // Update comment count
+        const mediaRef = doc(db, "gallery", currentMediaId);
+        await updateDoc(mediaRef, {
+            comments: increment(1)
+        });
+
+        // Reset input and reload
+        commentInput.value = '';
+        await loadComments(currentMediaId);
+        
+    } catch (error) {
+        console.error("Error adding comment:", error);
+        alert("Error posting comment: " + error.message);
+    } finally {
+        commentSubmit.disabled = false;
+    }
+}
+
+async function loadComments(mediaId) {
+    if (!mediaId) return;
+    commentsArea.innerHTML = '';
+    
+    try {
+        const commentsRef = collection(db, `gallery/${currentMediaId}/comments`);
+        const q = query(commentsRef, orderBy("timestamp", "desc"));
+        const querySnapshot = await getDocs(q);
+        
+        if (querySnapshot.empty) {
+            commentsArea.innerHTML = '<p class="no-comments">No comments yet. Be the first to comment!</p>';
+            return;
+        }
+
+        querySnapshot.forEach((doc) => {
+            const comment = doc.data();
+            const commentEl = document.createElement('div');
+            commentEl.className = 'comment';
+            commentEl.innerHTML = `
+                <div class="comment-header">
+                    <span class="comment-username">${comment.username}</span>
+                    <span class="comment-timestamp">${formatTimestamp(comment.timestamp)}</span>
+                </div>
+                <div class="comment-text">${comment.text}</div>
+            `;
+            commentsArea.appendChild(commentEl);
+        });
+    } catch (error) {
+        console.error("Error loading comments:", error);
+        commentsArea.innerHTML = '<p class="error">Error loading comments. Please try again later.</p>';
+    }
+}
+
+
+function formatTimestamp(timestamp) {
+    if (!timestamp) return '';
+    const date = timestamp.toDate();
+    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+}
+
+// Add comment event listeners
+commentSubmit.addEventListener('click', submitComment);
+commentInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        submitComment();
+    }
+});
 
         // Render gallery based on mediaItems array
         function renderGallery() {
