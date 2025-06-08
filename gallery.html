@@ -678,16 +678,12 @@
         import { getFirestore, collection, addDoc, getDoc, onSnapshot, query, orderBy, doc, setDoc, updateDoc, arrayUnion, arrayRemove, where, getDocs, increment } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-firestore.js";
         import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-storage.js";
 
-        // Firebase config
-        const firebaseConfig = {
-            apiKey: "AIzaSyDsb7m4EijaU3NNxwoos8y6egI29nfbChk",
-            authDomain: "jennix-777e1.firebaseapp.com",
-            projectId: "jennix-777e1",
-            storageBucket: "jennix-777e1.appspot.com",
-            messagingSenderId: "673075142639",
-            appId: "1:673075142639:web:ea93e3ae1b244463ca201a",
-            measurementId: "G-HKJ85NVGF4"
-        };
+       // Cloudinary config
+const cloudinary = {
+    cloud_name: 'dgwiny07o',
+    api_key: '458515823487253',
+    uploadPreset: 'jennix_gallery_upload'
+};
 
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
@@ -859,86 +855,81 @@
         uploadBtn.addEventListener('click', uploadMedia);
 
         // Upload media function
-        async function uploadMedia() {
-            if (!currentUser) {
-                alert("Please sign in to upload media.");
-                return;
-            }
-            
-            const file = fileInput.files[0];
-            if (!file) {
-                alert("Please select a file to upload.");
-                return;
-            }
-            
-            if (file.size > 10 * 1024 * 1024) {
-                alert("File size exceeds 10MB limit. Please choose a smaller file.");
-                return;
-            }
-            
-            loadingSpinner.style.display = 'block';
-            uploadBtn.disabled = true;
-            
-            try {
-                const storageRef = ref(storage, `gallery/${currentUser.uid}/${Date.now()}_${file.name}`);
-                const uploadTask = uploadBytesResumable(storageRef, file);
-                
-                uploadTask.on('state_changed', 
-                    (snapshot) => {
-                        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                        console.log('Upload is ' + progress + '% done');
-                    },
-                    (error) => {
-                        console.error("Upload failed:", error);
-                        alert("Upload failed: " + error.message);
-                        loadingSpinner.style.display = 'none';
-                        uploadBtn.disabled = false;
-                    },
-                    async () => {
-                        try {
-                            const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-                            
-                            await addDoc(collection(db, "gallery"), {
-                                userId: currentUser.uid,
-                                username: currentUser.username,
-                                caption: captionText.value.trim(),
-                                fileURL: downloadURL,
-                                fileType: file.type.startsWith('image/') ? 'image' : 'video',
-                                fileName: file.name,
-                                timestamp: new Date(),
-                                likes: 0,
-                                likedBy: [],
-                                views: 0,
-                                comments: 0
-                            });
-                            
-                            fileInput.value = '';
-                            fileNameDisplay.textContent = "No file selected";
-                            captionText.value = '';
-                            imagePreview.classList.remove('show');
-                            videoPreview.classList.remove('show');
-                            
-                            loadingSpinner.style.display = 'none';
-                            uploadBtn.disabled = false;
-                            
-                            loadGalleryContent();
-                            
-                            alert("Upload successful!");
-                        } catch (error) {
-                            console.error("Error adding document:", error);
-                            alert("Error saving media data: " + error.message);
-                            loadingSpinner.style.display = 'none';
-                            uploadBtn.disabled = false;
-                        }
-                    }
-                );
-            } catch (error) {
-                console.error("Upload error:", error);
-                alert("Upload error: " + error.message);
-                loadingSpinner.style.display = 'none';
-                uploadBtn.disabled = false;
-            }
+       async function uploadMedia() {
+    if (!currentUser) {
+        alert("Please sign in to upload media.");
+        return;
+    }
+    
+    const file = fileInput.files[0];
+    if (!file) {
+        alert("Please select a file to upload.");
+        return;
+    }
+    
+    if (file.size > 10 * 1024 * 1024) {
+        alert("File size exceeds 10MB limit. Please choose a smaller file.");
+        return;
+    }
+    
+    loadingSpinner.style.display = 'block';
+    uploadBtn.disabled = true;
+    
+    try {
+        // Create form data for Cloudinary upload
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('upload_preset', 'ml_default');
+        formData.append('cloud_name', cloudinary.cloud_name);
+        
+        // Upload to Cloudinary
+        const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudinary.cloud_name}/auto/upload`, {
+            method: 'POST',
+            body: formData
+        });
+        
+        if (!response.ok) {
+            throw new Error('Upload to Cloudinary failed');
         }
+        
+        const data = await response.json();
+        
+        // Save to Firebase database with Cloudinary URL
+        await addDoc(collection(db, "gallery"), {
+            userId: currentUser.uid,
+            username: currentUser.username,
+            caption: captionText.value.trim(),
+            fileURL: data.secure_url,
+            fileType: file.type.startsWith('image/') ? 'image' : 'video',
+            fileName: file.name,
+            timestamp: new Date(),
+            likes: 0,
+            likedBy: [],
+            views: 0,
+            comments: 0,
+            cloudinaryPublicId: data.public_id // Store Cloudinary public ID for future reference
+        });
+        
+        // Reset form
+        fileInput.value = '';
+        fileNameDisplay.textContent = "No file selected";
+        captionText.value = '';
+        imagePreview.classList.remove('show');
+        videoPreview.classList.remove('show');
+        
+        loadingSpinner.style.display = 'none';
+        uploadBtn.disabled = false;
+        
+        loadGalleryContent();
+        
+        alert("Upload successful!");
+    } catch (error) {
+        console.error("Upload error:", error);
+        alert("Upload error: " + error.message);
+        loadingSpinner.style.display = 'none';
+        uploadBtn.disabled = false;
+    }
+}
 
         // Load gallery content based on current sort and view settings
         async function loadGalleryContent() {
