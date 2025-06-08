@@ -830,38 +830,37 @@ const cloudinary = {
             signOut(auth);
         };
 
-       // File input change handler
-fileInput.addEventListener('change', () => {
-    const file = fileInput.files[0];
-    
-    if (file) {
-        fileNameDisplay.textContent = file.name;
-        uploadBtn.disabled = false;  // Enable upload button when file is selected
-        
-        // Reset previews
-        imagePreview.classList.remove('show');
-        videoPreview.classList.remove('show');
-        
-        // Check file type and show appropriate preview
-        if (file.type.startsWith('image/')) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                imagePreview.src = e.target.result;
-                imagePreview.classList.add('show');
-            };
-            reader.readAsDataURL(file);
-        } else if (file.type.startsWith('video/')) {
-            const url = URL.createObjectURL(file);
-            videoPreview.src = url;
-            videoPreview.classList.add('show');
-        }
-    } else {
-        fileNameDisplay.textContent = "No file selected";
-        imagePreview.classList.remove('show');
-        videoPreview.classList.remove('show');
-        uploadBtn.disabled = true;
-    }
-});
+        // File input change handler
+        fileInput.addEventListener('change', () => {
+            const file = fileInput.files[0];
+            
+            if (file) {
+                fileNameDisplay.textContent = file.name;
+                
+                // Reset previews
+                imagePreview.classList.remove('show');
+                videoPreview.classList.remove('show');
+                
+                // Check file type and show appropriate preview
+                if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        imagePreview.src = e.target.result;
+                        imagePreview.classList.add('show');
+                    };
+                    reader.readAsDataURL(file);
+                } else if (file.type.startsWith('video/')) {
+                    const url = URL.createObjectURL(file);
+                    videoPreview.src = url;
+                    videoPreview.classList.add('show');
+                }
+            } else {
+                fileNameDisplay.textContent = "No file selected";
+                imagePreview.classList.remove('show');
+                videoPreview.classList.remove('show');
+                uploadBtn.disabled = true;
+            }
+        });
 
         // Upload button click handler
         uploadBtn.addEventListener('click', uploadMedia);
