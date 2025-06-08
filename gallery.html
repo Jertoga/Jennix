@@ -942,77 +942,48 @@ const cloudinary = {
     }
 }
 
-        // Load gallery content based on current sort and view settings
-        async function loadGalleryContent() {
-            loadingSpinner.style.display = 'block';
-            galleryGrid.innerHTML = '';
-            
-            try {
-                let q;
-                
-                if (currentView === 'photos') {
-                    q = query(
-                        collection(db, "gallery"),
-                        where("fileType", "==", "image")
-                    );
-                } else if (currentView === 'videos') {
-                    q = query(
-                        collection(db, "gallery"),
-                        where("fileType", "==", "video")
-                    );
-                } else if (currentView === 'liked' && currentUser) {
-                    const likedItems = await Promise.all(
-                        userLikes.map(async (id) => {
-                            const docRef = doc(db, "gallery", id);
-                            const docSnap = await getDoc(docRef);
-                            if (docSnap.exists()) {
-                                return { id: docSnap.id, ...docSnap.data() };
-                            }
-                            return null;
-                        })
-                    );
-                    
-                    mediaItems = likedItems.filter(item => item !== null);
-                    
-                    if (currentSort === 'recent') {
-                        mediaItems.sort((a, b) => b.timestamp.toDate() - a.timestamp.toDate());
-                    } else if (currentSort === 'popular') {
-                        mediaItems.sort((a, b) => b.likes - a.likes);
-                    } else if (currentSort === 'views') {
-                        mediaItems.sort((a, b) => b.views - a.views);
-                    }
-                    
-                    renderGallery();
-                    loadingSpinner.style.display = 'none';
-                    return;
-                } else {
-                    q = query(collection(db, "gallery"));
-                }
-                
-                if (currentSort === 'recent') {
-                    q = query(q, orderBy("timestamp", "desc"));
-                } else if (currentSort === 'popular') {
-                    q = query(q, orderBy("likes", "desc"));
-                } else if (currentSort === 'views') {
-                    q = query(q, orderBy("views", "desc"));
-                }
-                
-                const querySnapshot = await getDocs(q);
-                
-                mediaItems = [];
-                querySnapshot.forEach((doc) => {
-                    mediaItems.push({ id: doc.id, ...doc.data() });
-                });
-                
-                renderGallery();
-                
-            } catch (error) {
-                console.error("Error loading gallery:", error);
-                alert("Error loading gallery: " + error.message);
-            } finally {
-                loadingSpinner.style.display = 'none';
-            }
+       // Load gallery content based on current sort and view settings
+async function loadGalleryContent() {
+    loadingSpinner.style.display = 'block';
+    galleryGrid.innerHTML = '';
+    
+    try {
+        // Haal eerst alle documenten op
+        const querySnapshot = await getDocs(collection(db, "gallery"));
+        
+        // Converteer naar array en filter/sorteer in memory
+        mediaItems = [];
+        querySnapshot.forEach((doc) => {
+            mediaItems.push({ id: doc.id, ...doc.data() });
+        });
+        
+        // Filter op basis van view
+        if (currentView === 'photos') {
+            mediaItems = mediaItems.filter(item => item.fileType === 'image');
+        } else if (currentView === 'videos') {
+            mediaItems = mediaItems.filter(item => item.fileType === 'video');
+        } else if (currentView === 'liked' && currentUser) {
+            mediaItems = mediaItems.filter(item => userLikes.includes(item.id));
         }
+        
+        // Sorteer de items
+        if (currentSort === 'recent') {
+            mediaItems.sort((a, b) => b.timestamp.toDate() - a.timestamp.toDate());
+        } else if (currentSort === 'popular') {
+            mediaItems.sort((a, b) => b.likes - a.likes);
+        } else if (currentSort === 'views') {
+            mediaItems.sort((a, b) => b.views - a.views);
+        }
+        
+        renderGallery();
+    } catch (error) {
+        console.error("Error loading gallery:", error);
+        noContentMessage.textContent = "Error loading gallery content. Please try again later.";
+        noContentMessage.style.display = 'block';
+    }
+    
+    loadingSpinner.style.display = 'none';
+}
 
         // Render gallery based on mediaItems array
         function renderGallery() {
