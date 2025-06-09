@@ -946,169 +946,77 @@
     }
 }
 
-       // Load gallery content based on current sort and view settings
-async function loadGalleryContent() {
-    loadingSpinner.style.display = 'block';
-    galleryGrid.innerHTML = '';
-    
-    try {
-        let q;
-        
-        if (currentView === 'photos') {
-            q = query(
-                collection(db, "gallery"),
-                where("fileType", "==", "image") // This should match what you store in Firestore
-            );
-        } else if (currentView === 'videos') {
-            q = query(
-                collection(db, "gallery"),
-                where("fileType", "==", "video") // This should match what you store in Firestore
-            );
-        } else if (currentView === 'liked' && currentUser) {
-            const likedItems = await Promise.all(
-                userLikes.map(async (id) => {
-                    const docRef = doc(db, "gallery", id);
-                    const docSnap = await getDoc(docRef);
-                    if (docSnap.exists()) {
-                        return { id: docSnap.id, ...docSnap.data() };
+        // Load gallery content based on current sort and view settings
+        async function loadGalleryContent() {
+            loadingSpinner.style.display = 'block';
+            galleryGrid.innerHTML = '';
+            
+            try {
+                let q;
+                
+                if (currentView === 'photos') {
+                    q = query(
+                        collection(db, "gallery"),
+                        where("fileType", "==", "image")
+                    );
+                } else if (currentView === 'videos') {
+                    q = query(
+                        collection(db, "gallery"),
+                        where("fileType", "==", "video")
+                    );
+                } else if (currentView === 'liked' && currentUser) {
+                    const likedItems = await Promise.all(
+                        userLikes.map(async (id) => {
+                            const docRef = doc(db, "gallery", id);
+                            const docSnap = await getDoc(docRef);
+                            if (docSnap.exists()) {
+                                return { id: docSnap.id, ...docSnap.data() };
+                            }
+                            return null;
+                        })
+                    );
+                    
+                    mediaItems = likedItems.filter(item => item !== null);
+                    
+                    if (currentSort === 'recent') {
+                        mediaItems.sort((a, b) => b.timestamp.toDate() - a.timestamp.toDate());
+                    } else if (currentSort === 'popular') {
+                        mediaItems.sort((a, b) => b.likes - a.likes);
+                    } else if (currentSort === 'views') {
+                        mediaItems.sort((a, b) => b.views - a.views);
                     }
-                    return null;
-                })
-            );
-            
-            mediaItems = likedItems.filter(item => item !== null);
-            
-            if (currentSort === 'recent') {
-                mediaItems.sort((a, b) => b.timestamp.toDate() - a.timestamp.toDate());
-            } else if (currentSort === 'popular') {
-                mediaItems.sort((a, b) => b.likes - a.likes);
-            } else if (currentSort === 'views') {
-                mediaItems.sort((a, b) => b.views - a.views);
+                    
+                    renderGallery();
+                    loadingSpinner.style.display = 'none';
+                    return;
+                } else {
+                    q = query(collection(db, "gallery"));
+                }
+                
+                if (currentSort === 'recent') {
+                    q = query(q, orderBy("timestamp", "desc"));
+                } else if (currentSort === 'popular') {
+                    q = query(q, orderBy("likes", "desc"));
+                } else if (currentSort === 'views') {
+                    q = query(q, orderBy("views", "desc"));
+                }
+                
+                const querySnapshot = await getDocs(q);
+                
+                mediaItems = [];
+                querySnapshot.forEach((doc) => {
+                    mediaItems.push({ id: doc.id, ...doc.data() });
+                });
+                
+                renderGallery();
+                
+            } catch (error) {
+                console.error("Error loading gallery:", error);
+                alert("Error loading gallery: " + error.message);
+            } finally {
+                loadingSpinner.style.display = 'none';
             }
-            
-            renderGallery();
-            loadingSpinner.style.display = 'none';
-            return;
-        } else {
-            q = query(collection(db, "gallery"));
         }
-        
-        if (currentSort === 'recent') {
-            q = query(q, orderBy("timestamp", "desc"));
-        } else if (currentSort === 'popular') {
-            q = query(q, orderBy("likes", "desc"));
-        } else if (currentSort === 'views') {
-            q = query(q, orderBy("views", "desc"));
-        }
-        
-        const querySnapshot = await getDocs(q);
-        
-        mediaItems = [];
-        querySnapshot.forEach((doc) => {
-            mediaItems.push({ id: doc.id, ...doc.data() });
-        });
-        
-        renderGallery();
-        
-    } catch (error) {
-        console.error("Error loading gallery:", error);
-        alert("Error loading gallery: " + error.message);
-    } finally {
-        loadingSpinner.style.display = 'none';
-    }
-}
-
-// Updated upload function to ensure consistent fileType storage
-async function uploadMedia() {
-    if (!currentUser) {
-        alert("Please sign in to upload media.");
-        return;
-    }
-
-    const file = fileInput.files[0];
-    if (!file) {
-        alert("Please select a file to upload.");
-        return;
-    }
-
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'video/mp4', 'video/webm', 'video/quicktime'];
-    if (!allowedTypes.includes(file.type)) {
-        alert("Unsupported file type. Please upload an image (JPG, PNG, GIF) or video (MP4, WebM, MOV).");
-        return;
-    }
-
-    if (file.size > 50 * 1024 * 1024) {
-        alert("File size exceeds 50MB limit. Please choose a smaller file.");
-        return;
-    }
-
-    loadingSpinner.style.display = 'block';
-    uploadBtn.disabled = true;
-
-    try {
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-
-        const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/upload`, {
-            method: 'POST',
-            body: formData,
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-            // Determine file type consistently
-            let fileType;
-            if (file.type.startsWith('image/')) {
-                fileType = 'image';
-            } else if (file.type.startsWith('video/')) {
-                fileType = 'video';
-            } else {
-                fileType = data.resource_type; // fallback to Cloudinary's determination
-            }
-
-            // Save to Firestore with consistent fileType
-            await addDoc(collection(db, "gallery"), {
-                userId: currentUser.uid,
-                username: currentUser.username,
-                caption: captionText.value.trim(),
-                fileURL: data.secure_url,
-                publicId: data.public_id,
-                fileType: fileType, // Use our determined fileType, not Cloudinary's resource_type
-                fileName: file.name,
-                timestamp: new Date(),
-                likes: 0,
-                likedBy: [],
-                views: 0,
-                comments: 0
-            });
-
-            // Reset form
-            fileInput.value = '';
-            fileNameDisplay.textContent = "No file selected";
-            captionText.value = '';
-            imagePreview.classList.remove('show');
-            videoPreview.classList.remove('show');
-
-            loadingSpinner.style.display = 'none';
-            uploadBtn.disabled = false;
-
-            alert("Upload successful!");
-            loadGalleryContent();
-
-        } else {
-            console.error("Cloudinary Upload failed:", data);
-            alert(`Upload failed: ${data.error ? data.error.message : 'Unknown error'}`);
-        }
-    } catch (error) {
-        console.error("Network or Cloudinary API Error:", error);
-        alert("Upload error: " + error.message);
-    } finally {
-        loadingSpinner.style.display = 'none';
-        uploadBtn.disabled = false;
-    }
-}
 
         // Render gallery based on mediaItems array
         function renderGallery() {
