@@ -858,54 +858,88 @@
         // Upload button click handler
         uploadBtn.addEventListener('click', uploadMedia);
 
-        // Upload handler (Cloudinary)
-        uploadBtn.addEventListener('click', async () => {
+        // Upload media function
+        async function uploadMedia() {
             if (!currentUser) {
                 alert("Please sign in to upload media.");
                 return;
             }
+            
             const file = fileInput.files[0];
             if (!file) {
                 alert("Please select a file to upload.");
                 return;
             }
+            
             if (file.size > 10 * 1024 * 1024) {
                 alert("File size exceeds 10MB limit. Please choose a smaller file.");
                 return;
             }
+            
             loadingSpinner.style.display = 'block';
             uploadBtn.disabled = true;
-
+            
             try {
-                const formData = new FormData();
-                formData.append("file", file);
-                formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
-                // Optional: folder
-                formData.append("folder", "jennix_gallery");
-
-                // Upload to Cloudinary
-                const response = await axios.post(
-                    CLOUDINARY_URL,
-                    formData,
-                    { headers: { "X-Requested-With": "XMLHttpRequest" } }
-                );
-                const fileURL = response.data.secure_url;
-                const resourceType = response.data.resource_type; // image or video
-                const mediaObj = {
-                    id: uuidv4(),
-                    userId: currentUser.uid,
-                    username: currentUser.username,
-                    caption: captionText.value.trim(),
-                    fileURL,
-                    fileType: resourceType,
-                    fileName: file.name,
-                    timestamp: new Date().toISOString(),
-                    likes: 0,
-                    likedBy: [],
-                    views: 0,
-                    comments: [],
-                };
+                const storageRef = ref(storage, `gallery/${currentUser.uid}/${Date.now()}_${file.name}`);
+                const uploadTask = uploadBytesResumable(storageRef, file);
                 
+                uploadTask.on('state_changed', 
+                    (snapshot) => {
+                        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                        console.log('Upload is ' + progress + '% done');
+                    },
+                    (error) => {
+                        console.error("Upload failed:", error);
+                        alert("Upload failed: " + error.message);
+                        loadingSpinner.style.display = 'none';
+                        uploadBtn.disabled = false;
+                    },
+                    async () => {
+                        try {
+                            const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+                            
+                            await addDoc(collection(db, "gallery"), {
+                                userId: currentUser.uid,
+                                username: currentUser.username,
+                                caption: captionText.value.trim(),
+                                fileURL: downloadURL,
+                                fileType: file.type.startsWith('image/') ? 'image' : 'video',
+                                fileName: file.name,
+                                timestamp: new Date(),
+                                likes: 0,
+                                likedBy: [],
+                                views: 0,
+                                comments: 0
+                            });
+                            
+                            fileInput.value = '';
+                            fileNameDisplay.textContent = "No file selected";
+                            captionText.value = '';
+                            imagePreview.classList.remove('show');
+                            videoPreview.classList.remove('show');
+                            
+                            loadingSpinner.style.display = 'none';
+                            uploadBtn.disabled = false;
+                            
+                            loadGalleryContent();
+                            
+                            alert("Upload successful!");
+                        } catch (error) {
+                            console.error("Error adding document:", error);
+                            alert("Error saving media data: " + error.message);
+                            loadingSpinner.style.display = 'none';
+                            uploadBtn.disabled = false;
+                        }
+                    }
+                );
+            } catch (error) {
+                console.error("Upload error:", error);
+                alert("Upload error: " + error.message);
+                loadingSpinner.style.display = 'none';
+                uploadBtn.disabled = false;
+            }
+        }
+
         // Load gallery content based on current sort and view settings
         async function loadGalleryContent() {
             loadingSpinner.style.display = 'block';
