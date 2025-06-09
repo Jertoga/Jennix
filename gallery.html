@@ -1154,12 +1154,10 @@
         async function loadComments(mediaId) {
             commentsArea.innerHTML = '';
             
-            try {
-        // Construct the correct path to the comments subcollection
-        const commentsRef = collection(db, "gallery", mediaId, "comments");
-
+             try {
         const q = query(
-            commentsRef, // Use the commentsRef here
+            collection(db, "comments"),
+            where("mediaId", "==", mediaId),
             orderBy("timestamp", "desc")
         );
 
