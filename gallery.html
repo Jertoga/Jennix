@@ -498,36 +498,400 @@
         }
         
         /* Mobile specific adjustments */
-        @media (max-width: 768px) {
-            .gallery-controls {
-                flex-direction: column;
-                align-items: stretch;
-            }
-            
-            .sort-options, .view-options {
-                justify-content: center;
-            }
-            
-            .sort-btn, .view-btn {
-                flex: 1;
-                text-align: center;
-                white-space: nowrap;
-            }
-            
-            .gallery-grid {
-                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-                gap: 10px;
-            }
-            
-            .upload-container {
-                padding: 15px;
-            }
-            
-            .modal-content {
-                width: 95%;
-                max-height: 95vh;
-            }
-        }
+        /* Vervang de bestaande mobiele CSS sectie (vanaf "/* Mobile specific adjustments */") met deze verbeterde versie: */
+
+/* Mobile specific adjustments */
+@media (max-width: 768px) {
+    /* Header aanpassingen voor mobiel */
+    header {
+        padding: 10px 15px;
+    }
+    
+    header nav ul {
+        gap: 8px;
+    }
+    
+    header nav ul li a {
+        padding: 6px 10px;
+        font-size: 0.9em;
+    }
+    
+    #authButton, #logoutBtn {
+        padding: 6px 10px;
+        font-size: 0.9em;
+    }
+    
+    /* Gallery section */
+    #gallerySection {
+        padding: 15px;
+        max-width: 100%;
+    }
+    
+    #gallerySection h2 {
+        font-size: 1.5em;
+        margin-bottom: 20px;
+        text-align: center;
+    }
+    
+    /* Upload container voor mobiel */
+    .upload-container {
+        padding: 15px;
+        margin-bottom: 15px;
+    }
+    
+    .upload-header h3 {
+        font-size: 1.2em;
+        margin-bottom: 10px;
+    }
+    
+    .file-input-container {
+        gap: 8px;
+    }
+    
+    .custom-file-input {
+        padding: 12px 15px;
+        font-size: 1em;
+        touch-action: manipulation;
+    }
+    
+    #fileNameDisplay {
+        font-size: 0.9em;
+        color: #888;
+        word-break: break-all;
+    }
+    
+    .file-preview {
+        max-height: 200px;
+        border-radius: 8px;
+    }
+    
+    #captionText {
+        padding: 12px;
+        font-size: 1em;
+        min-height: 80px;
+        -webkit-appearance: none;
+        border-radius: 8px;
+    }
+    
+    #uploadBtn {
+        padding: 15px;
+        font-size: 1.1em;
+        border-radius: 8px;
+        touch-action: manipulation;
+    }
+    
+    /* Gallery controls voor mobiel */
+    .gallery-controls {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 15px;
+    }
+    
+    .sort-options, .view-options {
+        justify-content: center;
+        gap: 8px;
+    }
+    
+    .sort-btn, .view-btn {
+        flex: 1;
+        text-align: center;
+        white-space: nowrap;
+        padding: 10px 8px;
+        font-size: 0.9em;
+        border-radius: 6px;
+        touch-action: manipulation;
+        min-height: 44px; /* Apple's recommended minimum touch target */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    /* Gallery grid voor mobiel */
+    .gallery-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+        margin-top: 15px;
+    }
+    
+    .gallery-item {
+        aspect-ratio: 1;
+        border-radius: 12px;
+    }
+    
+    .gallery-item-overlay {
+        padding: 8px;
+        background: rgba(0, 0, 0, 0.8);
+    }
+    
+    .gallery-item-info {
+        font-size: 0.8em;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    
+    .gallery-item-actions {
+        gap: 8px;
+    }
+    
+    .like-btn, .comment-btn {
+        font-size: 0.8em;
+        min-height: 32px;
+        padding: 4px 6px;
+        border-radius: 4px;
+        touch-action: manipulation;
+    }
+    
+    /* Modal aanpassingen voor mobiel */
+    .modal-content {
+        width: 100%;
+        height: 100%;
+        max-width: none;
+        max-height: none;
+        border-radius: 0;
+        margin: 0;
+    }
+    
+    .modal-header {
+        padding: 15px;
+        position: sticky;
+        top: 0;
+        background-color: #1e1e1e;
+        z-index: 10;
+        border-bottom: 1px solid #333;
+    }
+    
+    .modal-title {
+        font-size: 1.1em;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: calc(100% - 40px);
+    }
+    
+    .close-modal {
+        font-size: 24px;
+        min-width: 32px;
+        min-height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        touch-action: manipulation;
+    }
+    
+    .modal-body {
+        flex-direction: column;
+        height: calc(100vh - 120px); /* Account voor header en actions */
+    }
+    
+    .media-container {
+        flex: 1;
+        max-height: 50vh;
+        background-color: #000;
+    }
+    
+    .media-container img, .media-container video {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+    }
+    
+    .comments-container {
+        width: 100%;
+        max-height: 50vh;
+        padding: 15px;
+        border-left: none;
+        border-top: 1px solid #333;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .comments-container h4 {
+        margin-top: 0;
+        margin-bottom: 15px;
+        font-size: 1.1em;
+    }
+    
+    .comment {
+        margin-bottom: 12px;
+        padding-bottom: 12px;
+    }
+    
+    .comment-header {
+        margin-bottom: 6px;
+    }
+    
+    .comment-username {
+        font-size: 0.9em;
+    }
+    
+    .comment-timestamp {
+        font-size: 0.75em;
+    }
+    
+    .comment-text {
+        font-size: 0.9em;
+        line-height: 1.4;
+    }
+    
+    .comment-form {
+        margin-top: 15px;
+        gap: 10px;
+        position: sticky;
+        bottom: 0;
+        background-color: #1e1e1e;
+        padding-top: 10px;
+    }
+    
+    .comment-input {
+        padding: 12px;
+        font-size: 1em;
+        min-height: 44px;
+        max-height: 120px;
+        border-radius: 8px;
+        -webkit-appearance: none;
+    }
+    
+    .comment-submit {
+        padding: 12px 20px;
+        font-size: 1em;
+        border-radius: 8px;
+        touch-action: manipulation;
+        min-height: 44px;
+    }
+    
+    .modal-actions {
+        padding: 15px;
+        position: sticky;
+        bottom: 0;
+        background-color: #1e1e1e;
+        border-top: 1px solid #333;
+    }
+    
+    .modal-like-btn {
+        font-size: 1.1em;
+        min-height: 44px;
+        padding: 8px 12px;
+        border-radius: 6px;
+        touch-action: manipulation;
+    }
+    
+    .modal-stats {
+        gap: 12px;
+        font-size: 0.9em;
+    }
+    
+    /* Sign in/up modals voor mobiel */
+    #signInModal .modal-content,
+    #signUpModal .modal-content {
+        width: 95%;
+        max-width: 400px;
+        height: auto;
+        max-height: 90vh;
+        border-radius: 12px;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    #signInModal .modal-content h3,
+    #signUpModal .modal-content h3 {
+        font-size: 1.3em;
+        margin-bottom: 20px;
+        text-align: center;
+    }
+    
+    #signInModal .modal-content input,
+    #signUpModal .modal-content input {
+        padding: 12px;
+        font-size: 1em;
+        border-radius: 8px;
+        -webkit-appearance: none;
+        min-height: 44px;
+    }
+    
+    #signInModal .modal-content button[type="submit"],
+    #signUpModal .modal-content button[type="submit"] {
+        padding: 15px;
+        font-size: 1.1em;
+        border-radius: 8px;
+        touch-action: manipulation;
+        min-height: 50px;
+    }
+    
+    .close-btn {
+        font-size: 24px;
+        min-width: 32px;
+        min-height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        touch-action: manipulation;
+    }
+    
+    /* Loading spinner */
+    .loading-spinner {
+        margin: 30px auto;
+    }
+    
+    /* No content message */
+    .no-content {
+        margin: 30px 0;
+        font-size: 1em;
+        padding: 20px;
+    }
+    
+    /* Touch improvements */
+    * {
+        -webkit-tap-highlight-color: rgba(247, 168, 0, 0.3);
+    }
+    
+    button, .custom-file-input, .gallery-item {
+        -webkit-tap-highlight-color: rgba(247, 168, 0, 0.3);
+    }
+    
+    /* Prevent zoom on inputs */
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    textarea {
+        font-size: 16px; /* Prevents zoom on iOS */
+    }
+    
+    /* Smooth scrolling */
+    html {
+        -webkit-overflow-scrolling: touch;
+    }
+}
+
+/* Extra kleine schermen (iPhone SE, etc.) */
+@media (max-width: 375px) {
+    .gallery-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 6px;
+    }
+    
+    .sort-options, .view-options {
+        gap: 6px;
+    }
+    
+    .sort-btn, .view-btn {
+        padding: 8px 6px;
+        font-size: 0.85em;
+    }
+    
+    #gallerySection {
+        padding: 10px;
+    }
+    
+    .upload-container {
+        padding: 12px;
+    }
+    
+    .modal-stats {
+        gap: 8px;
+        font-size: 0.8em;
+    }
+}
     </style>
 </head>
 
