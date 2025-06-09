@@ -676,8 +676,11 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, getDoc, onSnapshot, query, orderBy, doc, setDoc, updateDoc, arrayUnion, arrayRemove, where, getDocs, increment } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-firestore.js";
-        import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-storage.js";
 
+        // Cloudinary Credentials (Deze waarden zijn nu correct voor jouw setup)
+        const CLOUDINARY_CLOUD_NAME = 'dgwiny07o';
+        const CLOUDINARY_UPLOAD_PRESET = 'jennix_gallery_upload';
+        
         // Firebase config
         const firebaseConfig = {
             apiKey: "AIzaSyDsb7m4EijaU3NNxwoos8y6egI29nfbChk",
@@ -693,7 +696,6 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const storage = getStorage(app);
 
         // DOM Elements for Gallery functionality
         const fileInput = document.getElementById('fileInput');
