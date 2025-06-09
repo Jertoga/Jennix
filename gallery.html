@@ -905,7 +905,7 @@
 
         if (response.ok) {
             // Cloudinary upload succesvol, sla de info op in Firestore
-            await addDoc(collection(db, "galleryItems"), { // Let op: je gebruikte 'galleryItems' in de Firestore Rules, maar 'gallery' hier. Pas dit aan!
+            await addDoc(collection(db, "gallery"), { // Let op: je gebruikte 'galleryItems' in de Firestore Rules, maar 'gallery' hier. Pas dit aan!
                 userId: currentUser.uid,
                 username: currentUser.username,
                 caption: captionText.value.trim(),
