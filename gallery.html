@@ -1423,7 +1423,6 @@
         noContentMessage.style.display = 'block';
         return;
     }
-
     noContentMessage.style.display = 'none';
 
     mediaItems.forEach((item) => {
@@ -1461,6 +1460,57 @@
             galleryItem.appendChild(deleteBtn);
         }
 
+        // Media tonen
+        if (item.fileType === 'image') {
+            const img = document.createElement('img');
+            img.src = item.fileURL;
+            img.alt = item.caption || 'Gallery image';
+            img.loading = 'lazy';
+            galleryItem.appendChild(img);
+        } else {
+            const video = document.createElement('video');
+            video.src = item.fileURL;
+            video.preload = 'metadata';
+            galleryItem.appendChild(video);
+
+            const playOverlay = document.createElement('div');
+            playOverlay.classList.add('play-overlay');
+            playOverlay.innerHTML = '▶';
+            galleryItem.appendChild(playOverlay);
+        }
+
+        // Overlay en acties
+        const overlay = document.createElement('div');
+        overlay.classList.add('gallery-item-overlay');
+
+        const info = document.createElement('div');
+        info.classList.add('gallery-item-info');
+        info.textContent = item.username || 'Anonymous';
+
+        const actions = document.createElement('div');
+        actions.classList.add('gallery-item-actions');
+
+        const likeBtn = document.createElement('button');
+        likeBtn.classList.add('like-btn');
+        likeBtn.innerHTML = `<span>♡</span> <span>${item.likes || 0}</span>`;
+
+        if (currentUser && userLikes.includes(item.id)) {
+            likeBtn.classList.add('liked');
+            likeBtn.querySelector('span:first-child').textContent = '♥';
+        }
+
+        const commentBtn = document.createElement('button');
+        commentBtn.classList.add('comment-btn');
+        commentBtn.innerHTML = `<span>💬</span> <span>${item.comments || 0}</span>`;
+
+        actions.appendChild(likeBtn);
+        actions.appendChild(commentBtn);
+
+        overlay.appendChild(info);
+        overlay.appendChild(actions);
+
+        galleryItem.appendChild(overlay);
+
         // Klikken op het item opent altijd de modal, behalve als je op een actieknop klikt
         galleryItem.addEventListener('click', (e) => {
             if (
@@ -1487,58 +1537,6 @@
     });
 }
         
-    // Media tonen
-    if (item.fileType === 'image') {
-        const img = document.createElement('img');
-        img.src = item.fileURL;
-        img.alt = item.caption || 'Gallery image';
-        img.loading = 'lazy';
-        galleryItem.appendChild(img);
-    } else {
-        const video = document.createElement('video');
-        video.src = item.fileURL;
-        video.preload = 'metadata';
-        galleryItem.appendChild(video);
-
-        const playOverlay = document.createElement('div');
-        playOverlay.classList.add('play-overlay');
-        playOverlay.innerHTML = '▶';
-        galleryItem.appendChild(playOverlay);
-    }
-
-    // Overlay en acties
-    const overlay = document.createElement('div');
-    overlay.classList.add('gallery-item-overlay');
-
-    const info = document.createElement('div');
-    info.classList.add('gallery-item-info');
-    info.textContent = item.username || 'Anonymous';
-
-    const actions = document.createElement('div');
-    actions.classList.add('gallery-item-actions');
-
-    const likeBtn = document.createElement('button');
-    likeBtn.classList.add('like-btn');
-    likeBtn.innerHTML = `<span>♡</span> <span>${item.likes || 0}</span>`;
-
-    if (currentUser && userLikes.includes(item.id)) {
-        likeBtn.classList.add('liked');
-        likeBtn.querySelector('span:first-child').textContent = '♥';
-    }
-
-    const commentBtn = document.createElement('button');
-    commentBtn.classList.add('comment-btn');
-    commentBtn.innerHTML = `<span>💬</span> <span>${item.comments || 0}</span>`;
-
-    actions.appendChild(likeBtn);
-    actions.appendChild(commentBtn);
-
-    overlay.appendChild(info);
-    overlay.appendChild(actions);
-
-    galleryItem.appendChild(overlay);
-
-});
         // Open media modal
         async function openMediaModal(item, focusComments = false) {
             currentMediaId = item.id;
