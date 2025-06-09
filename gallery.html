@@ -1416,48 +1416,127 @@
         }
 
         // Render gallery based on mediaItems array
-        function renderGallery() {
-            galleryGrid.innerHTML = '';
-            
-            if (mediaItems.length === 0) {
-                noContentMessage.style.display = 'block';
-                return;
-            }
-            
-            noContentMessage.style.display = 'none';
-            
-           mediaItems.forEach((item) => {
-    const galleryItem = document.createElement('div');
-    galleryItem.classList.add('gallery-item');
-    galleryItem.dataset.id = item.id;
+       function renderGallery() {
+    galleryGrid.innerHTML = '';
 
-    // Toon een lichte rand als het jouw bestand is
-    if (currentUser && item.userId === currentUser.uid) {
-        galleryItem.classList.add('gallery-item-own');
+    if (mediaItems.length === 0) {
+        noContentMessage.style.display = 'block';
+        return;
     }
 
-    // --- DELETE BUTTON BOVENIN ---
-    if (
-        currentUser &&
-        item.userId === currentUser.uid &&
-        item.timestamp &&
-        (
-            (typeof item.timestamp.toDate === "function"
-                ? ((new Date() - item.timestamp.toDate()) / (1000 * 60 * 60))
-                : ((new Date() - item.timestamp) / (1000 * 60 * 60))
-            ) < 1
-        )
-    ) {
-        const deleteBtn = document.createElement('button');
-        deleteBtn.className = 'gallery-delete-btn';
-        deleteBtn.title = "Verwijder (binnen 1 uur mogelijk)";
-        deleteBtn.innerHTML = '🗑️';
-        deleteBtn.addEventListener('click', function (e) {
-            e.stopPropagation();
-            if (confirm("Weet je zeker dat je deze upload wilt verwijderen?")) {
-                deleteGalleryItem(item);
+    noContentMessage.style.display = 'none';
+
+    mediaItems.forEach((item) => {
+        const galleryItem = document.createElement('div');
+        galleryItem.classList.add('gallery-item');
+        galleryItem.dataset.id = item.id;
+
+        // Jouw eigen bestand markeren (dikkere rand)
+        if (currentUser && item.userId === currentUser.uid) {
+            galleryItem.classList.add('gallery-item-own');
+        }
+
+        // DELETE BUTTON BOVENIN
+        if (
+            currentUser &&
+            item.userId === currentUser.uid &&
+            item.timestamp &&
+            (
+                (typeof item.timestamp.toDate === "function"
+                    ? ((new Date() - item.timestamp.toDate()) / (1000 * 60 * 60))
+                    : ((new Date() - item.timestamp) / (1000 * 60 * 60))
+                ) < 1
+            )
+        ) {
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'gallery-delete-btn';
+            deleteBtn.title = "Verwijder (binnen 1 uur mogelijk)";
+            deleteBtn.innerHTML = '🗑️';
+            deleteBtn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                if (confirm("Weet je zeker dat je deze upload wilt verwijderen?")) {
+                    deleteGalleryItem(item);
+                }
+            });
+            galleryItem.appendChild(deleteBtn);
+        }
+
+        // Media tonen
+        if (item.fileType === 'image') {
+            const img = document.createElement('img');
+            img.src = item.fileURL;
+            img.alt = item.caption || 'Gallery image';
+            img.loading = 'lazy';
+            galleryItem.appendChild(img);
+        } else {
+            const video = document.createElement('video');
+            video.src = item.fileURL;
+            video.preload = 'metadata';
+            galleryItem.appendChild(video);
+
+            const playOverlay = document.createElement('div');
+            playOverlay.classList.add('play-overlay');
+            playOverlay.innerHTML = '▶';
+            galleryItem.appendChild(playOverlay);
+        }
+
+        // Overlay en acties
+        const overlay = document.createElement('div');
+        overlay.classList.add('gallery-item-overlay');
+
+        const info = document.createElement('div');
+        info.classList.add('gallery-item-info');
+        info.textContent = item.username || 'Anonymous';
+
+        const actions = document.createElement('div');
+        actions.classList.add('gallery-item-actions');
+
+        const likeBtn = document.createElement('button');
+        likeBtn.classList.add('like-btn');
+        likeBtn.innerHTML = `<span>♡</span> <span>${item.likes || 0}</span>`;
+
+        if (currentUser && userLikes.includes(item.id)) {
+            likeBtn.classList.add('liked');
+            likeBtn.querySelector('span:first-child').textContent = '♥';
+        }
+
+        const commentBtn = document.createElement('button');
+        commentBtn.classList.add('comment-btn');
+        commentBtn.innerHTML = `<span>💬</span> <span>${item.comments || 0}</span>`;
+
+        actions.appendChild(likeBtn);
+        actions.appendChild(commentBtn);
+
+        overlay.appendChild(info);
+        overlay.appendChild(actions);
+
+        galleryItem.appendChild(overlay);
+
+        // Klikken op het item opent altijd de modal, behalve als je op een actieknop klikt
+        galleryItem.addEventListener('click', (e) => {
+            if (
+                e.target.closest('.like-btn') ||
+                e.target.closest('.comment-btn') ||
+                e.target.closest('.gallery-delete-btn')
+            ) {
+                return;
             }
+            openMediaModal(item);
         });
+
+        likeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleLike(item.id);
+        });
+
+        commentBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            openMediaModal(item, true);
+        });
+
+        galleryGrid.appendChild(galleryItem);
+    });
+}
         
     // Media tonen
     if (item.fileType === 'image') {
