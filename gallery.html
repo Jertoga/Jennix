@@ -1151,8 +1151,9 @@
         }
 
         // Load comments for a media item
-        async function loadComments(mediaId) {
-            commentsArea.innerHTML = '';
+        async function openMediaModal(item, focusComments = false) {
+    currentMediaId = item.id;
+    console.log("Opening modal for media ID:", item.id);
             
              try {
         const q = query(
