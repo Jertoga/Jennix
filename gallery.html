@@ -497,7 +497,7 @@
             margin: 40px 0;
         }
         
-   /* Mobile specific adjustments */
+  /* Mobile specific adjustments */
 @media (max-width: 768px) {
     * {
         -webkit-tap-highlight-color: rgba(247, 168, 0, 0.2);
@@ -513,6 +513,9 @@
     }
 
     header {
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
         padding: 8px 15px;
         backdrop-filter: blur(10px);
         -webkit-backdrop-filter: blur(10px);
@@ -520,26 +523,28 @@
 
     header nav ul {
         display: flex;
+        flex-direction: row;
         justify-content: space-around;
-        align-items: center;
+        width: 100%;
+        gap: 6px;
         padding: 0;
         margin: 0;
+    }
+
+    header nav ul li {
         list-style: none;
-        gap: 6px;
     }
 
     header nav ul li a {
+        display: block;
         padding: 8px 12px;
         font-size: 0.85em;
         border-radius: 20px;
-        text-decoration: none;
-        color: white;
-        background: rgba(0, 0, 0, 0.3);
         transition: all 0.2s ease;
-    }
-
-    header nav ul li a:active {
-        transform: scale(0.95);
+        text-align: center;
+        color: white;
+        text-decoration: none;
+        background: rgba(0, 0, 0, 0.5);
     }
 
     #authButton, #logoutBtn {
@@ -578,8 +583,6 @@
     }
 
     .file-input-container {
-        display: flex;
-        flex-direction: column;
         gap: 10px;
     }
 
@@ -588,8 +591,8 @@
         font-size: 0.95em;
         border-radius: 8px;
         background: linear-gradient(135deg, #333, #444);
+        transition: all 0.3s ease;
         text-align: center;
-        color: white;
     }
 
     .custom-file-input:active {
@@ -617,7 +620,6 @@
         border-radius: 8px;
         background: rgba(51, 51, 51, 0.8);
         backdrop-filter: blur(5px);
-        color: white;
     }
 
     #uploadBtn {
@@ -625,7 +627,6 @@
         font-size: 1.05em;
         border-radius: 8px;
         background: linear-gradient(135deg, #f7a800, #ff6b35);
-        color: white;
         transition: all 0.3s ease;
         box-shadow: 0 4px 15px rgba(247, 168, 0, 0.3);
     }
@@ -635,7 +636,6 @@
     }
 
     .gallery-controls {
-        display: flex;
         flex-direction: column;
         align-items: stretch;
         gap: 12px;
@@ -657,8 +657,8 @@
         display: flex;
         align-items: center;
         justify-content: center;
+        transition: all 0.2s ease;
         background: rgba(30, 30, 30, 0.8);
-        color: white;
         backdrop-filter: blur(5px);
     }
 
@@ -677,8 +677,8 @@
         aspect-ratio: 1;
         border-radius: 8px;
         overflow: hidden;
+        transition: all 0.3s ease;
         background: linear-gradient(135deg, rgba(30, 30, 30, 0.9), rgba(40, 40, 40, 0.9));
-        transition: transform 0.3s ease;
     }
 
     .gallery-item:active {
@@ -689,11 +689,6 @@
         width: 100%;
         height: 100%;
         object-fit: cover;
-        transition: transform 0.3s ease;
-    }
-
-    .gallery-item:hover img, .gallery-item:hover video {
-        transform: scale(1.05);
     }
 
     .gallery-item-overlay {
@@ -711,7 +706,6 @@
     }
 
     .gallery-item-actions {
-        display: flex;
         gap: 6px;
     }
 
@@ -722,7 +716,7 @@
         border-radius: 12px;
         background: rgba(0, 0, 0, 0.3);
         backdrop-filter: blur(5px);
-        color: white;
+        transition: all 0.2s ease;
     }
 
     .like-btn:active, .comment-btn:active {
@@ -730,44 +724,38 @@
     }
 
     .modal {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100vh;
-        background: rgba(0, 0, 0, 0.8);
-        z-index: 1000;
         backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
     }
 
     .modal-content {
         width: 100%;
-        height: 100%;
-        background: rgba(30, 30, 30, 0.95);
-        display: flex;
-        flex-direction: column;
+        height: 100vh;
+        max-width: none;
+        max-height: none;
         border-radius: 0;
+        margin: 0;
+        background: rgba(30, 30, 30, 0.95);
+        backdrop-filter: blur(20px);
     }
 
     .modal-header {
         padding: 15px;
         background: rgba(30, 30, 30, 0.9);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
+        backdrop-filter: blur(10px);
+        position: sticky;
+        top: 0;
+        z-index: 10;
         border-bottom: 1px solid rgba(51, 51, 51, 0.5);
     }
 
     .modal-title {
         font-size: 1.1em;
         font-weight: 600;
-        color: white;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+        max-width: calc(100% - 50px);
     }
 
     .close-modal {
@@ -779,7 +767,7 @@
         justify-content: center;
         border-radius: 50%;
         background: rgba(247, 168, 0, 0.1);
-        color: white;
+        transition: all 0.3s ease;
     }
 
     .close-modal:active {
@@ -788,9 +776,9 @@
     }
 
     .modal-body {
-        flex: 1;
-        display: flex;
         flex-direction: column;
+        height: calc(100vh - 140px);
+        overflow: hidden;
     }
 
     .media-container {
@@ -799,6 +787,7 @@
         align-items: center;
         justify-content: center;
         background: #000;
+        position: relative;
         overflow: hidden;
     }
 
@@ -806,15 +795,7 @@
         max-width: 100%;
         max-height: 100%;
         object-fit: contain;
-    }
-
-    .comments-container {
-        width: 100%;
-        max-height: 45vh;
-        overflow-y: auto;
-        background: rgba(20, 20, 20, 0.95);
-        color: white;
-        padding: 10px;
+        border-radius: 0;
     }
 }
 
