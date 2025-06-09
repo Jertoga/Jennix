@@ -1429,7 +1429,33 @@
                 commentBtn.innerHTML = `<span>💬</span> <span>${item.comments || 0}</span>`;
                 
                 actions.appendChild(likeBtn);
-                actions.appendChild(commentBtn);
+actions.appendChild(commentBtn);
+
+// ---- DELETE BUTTON BEGIN ----
+if (
+    currentUser &&
+    item.userId === currentUser.uid &&
+    item.timestamp &&
+    (
+        (typeof item.timestamp.toDate === "function"
+            ? ((new Date() - item.timestamp.toDate()) / (1000 * 60 * 60))
+            : ((new Date() - item.timestamp) / (1000 * 60 * 60))
+        ) < 1
+    )
+) {
+    const deleteBtn = document.createElement('button');
+    deleteBtn.classList.add('delete-btn');
+    deleteBtn.innerHTML = '🗑️';
+    deleteBtn.title = "Delete (binnen 1 uur na upload mogelijk)";
+    deleteBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        if (confirm("Weet je zeker dat je deze upload wilt verwijderen?")) {
+            deleteGalleryItem(item);
+        }
+    });
+    actions.appendChild(deleteBtn);
+}
+// ---- DELETE BUTTON END ----
                 
                 overlay.appendChild(info);
                 overlay.appendChild(actions);
