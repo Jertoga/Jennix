@@ -1155,50 +1155,52 @@
             commentsArea.innerHTML = '';
             
             try {
-                const q = query(
-                    collection(db, "comments"),
-                    where("mediaId", "==", mediaId),
-                    orderBy("timestamp", "desc")
-                );
-                
-                const querySnapshot = await getDocs(q);
-                
-                if (querySnapshot.empty) {
-                    commentsArea.innerHTML = '<p>No comments yet. Be the first to comment!</p>';
-                    return;
-                }
-                
-                querySnapshot.forEach((doc) => {
-                    const comment = doc.data();
-                    const commentEl = document.createElement('div');
-                    commentEl.classList.add('comment');
-                    
-                    const commentHeader = document.createElement('div');
-                    commentHeader.classList.add('comment-header');
-                    
-                    const username = document.createElement('span');
-                    username.classList.add('comment-username');
-                    username.textContent = comment.username;
-                    
-                    const timestamp = document.createElement('span');
-                    timestamp.classList.add('comment-timestamp');
-                    timestamp.textContent = formatDate(comment.timestamp.toDate());
-                    
-                    commentHeader.appendChild(username);
-                    commentHeader.appendChild(timestamp);
-                    
-                    const commentText = document.createElement('p');
-                    commentText.classList.add('comment-text');
-                    commentText.textContent = comment.text;
-                    
-                    commentEl.appendChild(commentHeader);
-                    commentEl.appendChild(commentText);
-                    
-                    commentsArea.appendChild(commentEl);
-                });
-            } catch (error) {
-                console.error("Error loading comments:", error);
-                commentsArea.innerHTML = '<p>Error loading comments.</p>';
+        // Construct the correct path to the comments subcollection
+        const commentsRef = collection(db, "gallery", mediaId, "comments");
+
+        const q = query(
+            commentsRef, // Use the commentsRef here
+            orderBy("timestamp", "desc")
+        );
+
+        const querySnapshot = await getDocs(q);
+
+        if (querySnapshot.empty) {
+            commentsArea.innerHTML = '<p>No comments yet. Be the first to comment!</p>';
+            return;
+        }
+
+        querySnapshot.forEach((doc) => {
+            const comment = doc.data();
+            const commentEl = document.createElement('div');
+            commentEl.classList.add('comment');
+
+            const commentHeader = document.createElement('div');
+            commentHeader.classList.add('comment-header');
+
+            const username = document.createElement('span');
+            username.classList.add('comment-username');
+            username.textContent = comment.username;
+
+            const timestamp = document.createElement('span');
+            timestamp.classList.add('comment-timestamp');
+            timestamp.textContent = formatDate(comment.timestamp.toDate());
+
+            commentHeader.appendChild(username);
+            commentHeader.appendChild(timestamp);
+
+            const commentText = document.createElement('p');
+            commentText.classList.add('comment-text');
+            commentText.textContent = comment.text;
+
+            commentEl.appendChild(commentHeader);
+            commentEl.appendChild(commentText);
+
+            commentsArea.appendChild(commentEl);
+        });
+    } catch (error) {
+        console.error("Error loading comments:", error);
+        commentsArea.innerHTML = '<p>Error loading comments.</p>';
             }
         }
 
