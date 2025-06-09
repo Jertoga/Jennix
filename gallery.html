@@ -858,7 +858,7 @@
         // Upload button click handler
         uploadBtn.addEventListener('click', uploadMedia);
 
-       // Upload handler (Cloudinary)
+        // Upload handler (Cloudinary)
         uploadBtn.addEventListener('click', async () => {
             if (!currentUser) {
                 alert("Please sign in to upload media.");
@@ -906,14 +906,6 @@
                     comments: [],
                 };
                 
-            } catch (error) {
-                console.error("Upload error:", error);
-                alert("Upload error: " + error.message);
-                loadingSpinner.style.display = 'none';
-                uploadBtn.disabled = false;
-            }
-        }
-
         // Load gallery content based on current sort and view settings
         async function loadGalleryContent() {
             loadingSpinner.style.display = 'block';
