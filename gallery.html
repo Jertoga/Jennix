@@ -1685,6 +1685,41 @@ if (
             }
         }
 
+        // Verwijder gallery item (bestand + Firestore document)
+async function deleteGalleryItem(item) {
+    try {
+        // 1. Verwijder uit Firestore
+        await updateDoc(doc(db, "gallery", item.id), { deleting: true }); // optioneel: markeren als deleted, voorkomt race conditions
+        await import('https://www.gstatic.com/firebasejs/11.7.1/firebase-firestore.js').then(async ({ deleteDoc, doc }) => {
+            await deleteDoc(doc(db, "gallery", item.id));
+        });
+
+        // 2. Verwijder van Cloudinary (alleen als je een authenticated backend hebt, niet direct vanaf client!)
+        // Je kunt Cloudinary client-side NIET veilig verwijderen zonder een backend.
+        // Optioneel: Bewaar alleen in Firestore dat het bestand "verwijderd" is, en verwijder het periodiek vanaf je backend.
+        // Zie https://cloudinary.com/documentation/image_upload_api_reference#destroy voor backend delete
+
+        // 3. Optioneel: Alle comments verwijderen (niet verplicht, maar netjes)
+        try {
+            const q = query(collection(db, "comments"), where("mediaId", "==", item.id));
+            const snapshot = await getDocs(q);
+            for (const docSnap of snapshot.docs) {
+                await import('https://www.gstatic.com/firebasejs/11.7.1/firebase-firestore.js').then(async ({ deleteDoc, doc }) => {
+                    await deleteDoc(doc(db, "comments", docSnap.id));
+                });
+            }
+        } catch (err) {
+            // Comments verwijderen is optioneel, negeer errors hier
+        }
+
+        alert("Upload verwijderd!");
+        loadGalleryContent();
+    } catch (error) {
+        console.error("Error deleting gallery item:", error);
+        alert("Fout bij verwijderen: " + error.message);
+    }
+}
+
         // Fetch user likes
         async function fetchUserLikes() {
             if (!currentUser) {
