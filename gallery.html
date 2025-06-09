@@ -122,6 +122,37 @@
             display: flex;
             gap: 10px;
         }
+
+        .gallery-item-own {
+    box-shadow: 0 0 0 2.5px #f7a800, 0 2px 12px rgba(0,0,0,0.35);
+    position: relative;
+}
+.gallery-delete-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 3;
+    background: #fffbe7;
+    color: #f44336;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    font-size: 1.7em;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.95;
+    transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+}
+.gallery-delete-btn:hover, .gallery-delete-btn:focus {
+    background: #ffe0e0;
+    color: #d32f2f;
+    box-shadow: 0 4px 16px rgba(244,67,54,0.22);
+    outline: none;
+}
         
         .like-btn, .comment-btn {
             background: none;
@@ -1395,54 +1426,114 @@
             
             noContentMessage.style.display = 'none';
             
-            mediaItems.forEach((item) => {
-                const galleryItem = document.createElement('div');
-                galleryItem.classList.add('gallery-item');
-                galleryItem.dataset.id = item.id;
-                
-                if (item.fileType === 'image') {
-                    const img = document.createElement('img');
-                    img.src = item.fileURL;
-                    img.alt = item.caption || 'Gallery image';
-                    img.loading = 'lazy';
-                    galleryItem.appendChild(img);
-                } else {
-                    const video = document.createElement('video');
-                    video.src = item.fileURL;
-                    video.preload = 'metadata';
-                    galleryItem.appendChild(video);
-                    
-                    const playOverlay = document.createElement('div');
-                    playOverlay.classList.add('play-overlay');
-                    playOverlay.innerHTML = '▶';
-                    galleryItem.appendChild(playOverlay);
-                }
-                
-                const overlay = document.createElement('div');
-                overlay.classList.add('gallery-item-overlay');
-                
-                const info = document.createElement('div');
-                info.classList.add('gallery-item-info');
-                info.textContent = item.username || 'Anonymous';
-                
-                const actions = document.createElement('div');
-                actions.classList.add('gallery-item-actions');
-                
-                const likeBtn = document.createElement('button');
-                likeBtn.classList.add('like-btn');
-                likeBtn.innerHTML = `<span>♡</span> <span>${item.likes || 0}</span>`;
-                
-                if (currentUser && userLikes.includes(item.id)) {
-                    likeBtn.classList.add('liked');
-                    likeBtn.querySelector('span:first-child').textContent = '♥';
-                }
-                
-                const commentBtn = document.createElement('button');
-                commentBtn.classList.add('comment-btn');
-                commentBtn.innerHTML = `<span>💬</span> <span>${item.comments || 0}</span>`;
-                
-                actions.appendChild(likeBtn);
-actions.appendChild(commentBtn);
+           mediaItems.forEach((item) => {
+    const galleryItem = document.createElement('div');
+    galleryItem.classList.add('gallery-item');
+    galleryItem.dataset.id = item.id;
+
+    // Toon een lichte rand als het jouw bestand is
+    if (currentUser && item.userId === currentUser.uid) {
+        galleryItem.classList.add('gallery-item-own');
+    }
+
+    // --- DELETE BUTTON BOVENIN ---
+    if (
+        currentUser &&
+        item.userId === currentUser.uid &&
+        item.timestamp &&
+        (
+            (typeof item.timestamp.toDate === "function"
+                ? ((new Date() - item.timestamp.toDate()) / (1000 * 60 * 60))
+                : ((new Date() - item.timestamp) / (1000 * 60 * 60))
+            ) < 1
+        )
+    ) {
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'gallery-delete-btn';
+        deleteBtn.title = "Verwijder (binnen 1 uur mogelijk)";
+        deleteBtn.innerHTML = '🗑️';
+        deleteBtn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            if (confirm("Weet je zeker dat je deze upload wilt verwijderen?")) {
+                deleteGalleryItem(item);
+            }
+        });
+        galleryItem.appendChild(deleteBtn);
+    }
+    // -----------------------------
+
+    // Media tonen
+    if (item.fileType === 'image') {
+        const img = document.createElement('img');
+        img.src = item.fileURL;
+        img.alt = item.caption || 'Gallery image';
+        img.loading = 'lazy';
+        galleryItem.appendChild(img);
+    } else {
+        const video = document.createElement('video');
+        video.src = item.fileURL;
+        video.preload = 'metadata';
+        galleryItem.appendChild(video);
+
+        const playOverlay = document.createElement('div');
+        playOverlay.classList.add('play-overlay');
+        playOverlay.innerHTML = '▶';
+        galleryItem.appendChild(playOverlay);
+    }
+
+    // Overlay en acties
+    const overlay = document.createElement('div');
+    overlay.classList.add('gallery-item-overlay');
+
+    const info = document.createElement('div');
+    info.classList.add('gallery-item-info');
+    info.textContent = item.username || 'Anonymous';
+
+    const actions = document.createElement('div');
+    actions.classList.add('gallery-item-actions');
+
+    const likeBtn = document.createElement('button');
+    likeBtn.classList.add('like-btn');
+    likeBtn.innerHTML = `<span>♡</span> <span>${item.likes || 0}</span>`;
+
+    if (currentUser && userLikes.includes(item.id)) {
+        likeBtn.classList.add('liked');
+        likeBtn.querySelector('span:first-child').textContent = '♥';
+    }
+
+    const commentBtn = document.createElement('button');
+    commentBtn.classList.add('comment-btn');
+    commentBtn.innerHTML = `<span>💬</span> <span>${item.comments || 0}</span>`;
+
+    actions.appendChild(likeBtn);
+    actions.appendChild(commentBtn);
+
+    overlay.appendChild(info);
+    overlay.appendChild(actions);
+
+    galleryItem.appendChild(overlay);
+
+    // Klikken op het item opent altijd de modal, behalve als je op een actieknop klikt
+    galleryItem.addEventListener('click', (e) => {
+        // Knoppen niet laten bubbelen
+        if (e.target.closest('.like-btn') || e.target.closest('.comment-btn') || e.target.closest('.gallery-delete-btn')) {
+            return;
+        }
+        openMediaModal(item);
+    });
+
+    likeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleLike(item.id);
+    });
+
+    commentBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openMediaModal(item, true);
+    });
+
+    galleryGrid.appendChild(galleryItem);
+});
 
 // ---- DELETE BUTTON BEGIN ----
 if (
