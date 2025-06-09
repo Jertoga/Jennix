@@ -860,85 +860,89 @@
 
         // Upload media function
         async function uploadMedia() {
-            if (!currentUser) {
-                alert("Please sign in to upload media.");
-                return;
-            }
-            
-            const file = fileInput.files[0];
-            if (!file) {
-                alert("Please select a file to upload.");
-                return;
-            }
-            
-            if (file.size > 10 * 1024 * 1024) {
-                alert("File size exceeds 10MB limit. Please choose a smaller file.");
-                return;
-            }
-            
-            loadingSpinner.style.display = 'block';
-            uploadBtn.disabled = true;
-            
-            try {
-                const storageRef = ref(storage, `gallery/${currentUser.uid}/${Date.now()}_${file.name}`);
-                const uploadTask = uploadBytesResumable(storageRef, file);
-                
-                uploadTask.on('state_changed', 
-                    (snapshot) => {
-                        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                        console.log('Upload is ' + progress + '% done');
-                    },
-                    (error) => {
-                        console.error("Upload failed:", error);
-                        alert("Upload failed: " + error.message);
-                        loadingSpinner.style.display = 'none';
-                        uploadBtn.disabled = false;
-                    },
-                    async () => {
-                        try {
-                            const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-                            
-                            await addDoc(collection(db, "gallery"), {
-                                userId: currentUser.uid,
-                                username: currentUser.username,
-                                caption: captionText.value.trim(),
-                                fileURL: downloadURL,
-                                fileType: file.type.startsWith('image/') ? 'image' : 'video',
-                                fileName: file.name,
-                                timestamp: new Date(),
-                                likes: 0,
-                                likedBy: [],
-                                views: 0,
-                                comments: 0
-                            });
-                            
-                            fileInput.value = '';
-                            fileNameDisplay.textContent = "No file selected";
-                            captionText.value = '';
-                            imagePreview.classList.remove('show');
-                            videoPreview.classList.remove('show');
-                            
-                            loadingSpinner.style.display = 'none';
-                            uploadBtn.disabled = false;
-                            
-                            loadGalleryContent();
-                            
-                            alert("Upload successful!");
-                        } catch (error) {
-                            console.error("Error adding document:", error);
-                            alert("Error saving media data: " + error.message);
-                            loadingSpinner.style.display = 'none';
-                            uploadBtn.disabled = false;
-                        }
-                    }
-                );
-            } catch (error) {
-                console.error("Upload error:", error);
-                alert("Upload error: " + error.message);
-                loadingSpinner.style.display = 'none';
-                uploadBtn.disabled = false;
-            }
+    if (!currentUser) {
+        alert("Please sign in to upload media.");
+        return;
+    }
+
+    const file = fileInput.files[0];
+    if (!file) {
+        alert("Please select a file to upload.");
+        return;
+    }
+
+    // Optioneel: Bestandstype validatie (Cloudinary kan ook filteren via preset)
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'video/mp4', 'video/webm', 'video/quicktime'];
+    if (!allowedTypes.includes(file.type)) {
+        alert("Unsupported file type. Please upload an image (JPG, PNG, GIF) or video (MP4, WebM, MOV).");
+        return;
+    }
+
+    if (file.size > 50 * 1024 * 1024) { // Let op de 10MB limiet was te laag voor video, 50MB is redelijker
+        alert("File size exceeds 50MB limit. Please choose a smaller file.");
+        return;
+    }
+
+    loadingSpinner.style.display = 'block';
+    uploadBtn.disabled = true;
+    // uploadStatus.textContent = "Bezig met uploaden..."; // Voeg een statusbericht toe voor de gebruiker
+
+    try {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+        // Optioneel: Voeg een publieke ID toe, of laat Cloudinary het genereren
+        // formData.append('public_id', `jennix_gallery/<span class="math-inline">\{currentUser\.uid\}/</span>{Date.now()}_${file.name.split('.')[0]}`); // Aanbevolen voor organisatie
+
+        const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/upload`, {
+            method: 'POST',
+            body: formData,
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            // Cloudinary upload succesvol, sla de info op in Firestore
+            await addDoc(collection(db, "gallery"), { // Let op: je gebruikte 'galleryItems' in de Firestore Rules, maar 'gallery' hier. Pas dit aan!
+                userId: currentUser.uid,
+                username: currentUser.username,
+                caption: captionText.value.trim(),
+                fileURL: data.secure_url, // De URL van het geüploade bestand
+                publicId: data.public_id, // Belangrijk voor het verwijderen van Cloudinary later
+                fileType: data.resource_type, // 'image' of 'video' komt van Cloudinary response
+                fileName: file.name,
+                timestamp: new Date(),
+                likes: 0, // Nieuwe velden
+                likedBy: [], // Nieuwe velden
+                views: 0,    // Nieuwe velden
+                comments: 0  // Nieuwe velden
+            });
+
+            fileInput.value = '';
+            fileNameDisplay.textContent = "No file selected";
+            captionText.value = '';
+            imagePreview.classList.remove('show');
+            videoPreview.classList.remove('show');
+
+            loadingSpinner.style.display = 'none';
+            uploadBtn.disabled = false;
+
+            alert("Upload successful!");
+            loadGalleryContent(); // Laad de galerij opnieuw om het nieuwe item te tonen
+
+        } else {
+            // Cloudinary upload mislukt
+            console.error("Cloudinary Upload failed:", data);
+            alert(`Upload failed: ${data.error ? data.error.message : 'Unknown error'}`);
         }
+    } catch (error) {
+        console.error("Network or Cloudinary API Error:", error);
+        alert("Upload error: " + error.message);
+    } finally {
+        loadingSpinner.style.display = 'none';
+        uploadBtn.disabled = false;
+    }
+}
 
         // Load gallery content based on current sort and view settings
         async function loadGalleryContent() {
