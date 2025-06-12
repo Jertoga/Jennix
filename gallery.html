@@ -1618,6 +1618,85 @@
     });
 }
 
+        // Display media (all items should be clickable)
+        if (item.fileType === 'image') {
+            const img = document.createElement('img');
+            img.src = item.fileURL;
+            img.alt = item.caption || 'Gallery image';
+            img.loading = 'lazy';
+            galleryItem.appendChild(img);
+        } else {
+            const video = document.createElement('video');
+            video.src = item.fileURL;
+            video.preload = 'metadata';
+            galleryItem.appendChild(video);
+
+            const playOverlay = document.createElement('div');
+            playOverlay.classList.add('play-overlay');
+            playOverlay.innerHTML = '▶';
+            galleryItem.appendChild(playOverlay);
+        }
+
+        // Overlay and actions
+        const overlay = document.createElement('div');
+        overlay.classList.add('gallery-item-overlay');
+
+        const info = document.createElement('div');
+        info.classList.add('gallery-item-info');
+        info.textContent = item.username || 'Anonymous';
+
+        const actions = document.createElement('div');
+        actions.classList.add('gallery-item-actions');
+
+        const likeBtn = document.createElement('button');
+        likeBtn.classList.add('like-btn');
+        likeBtn.innerHTML = `<span>♡</span> <span>${item.likes || 0}</span>`;
+
+        if (currentUser && userLikes.includes(item.id)) {
+            likeBtn.classList.add('liked');
+            likeBtn.querySelector('span:first-child').textContent = '♥';
+        }
+
+        const commentBtn = document.createElement('button');
+        commentBtn.classList.add('comment-btn');
+        commentBtn.innerHTML = `<span>💬</span> <span>${item.comments || 0}</span>`;
+
+        actions.appendChild(likeBtn);
+        actions.appendChild(commentBtn);
+
+        overlay.appendChild(info);
+        overlay.appendChild(actions);
+
+        galleryItem.appendChild(overlay);
+
+        // Make ALL items clickable, not just own items
+        galleryItem.addEventListener('click', (e) => {
+            // Don't open modal if clicking like, comment or delete buttons
+            if (
+                e.target.closest('.like-btn') ||
+                e.target.closest('.comment-btn') ||
+                e.target.closest('.gallery-delete-btn')
+            ) {
+                return;
+            }
+            openMediaModal(item);
+        });
+
+        // Individual button click handlers
+        likeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleLike(item.id);
+        });
+
+        commentBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            openMediaModal(item, true);
+        });
+
+        galleryGrid.appendChild(galleryItem);
+    });
+}
+
         // Media tonen
         if (item.fileType === 'image') {
             const img = document.createElement('img');
