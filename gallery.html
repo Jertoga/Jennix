@@ -1415,8 +1415,7 @@
             }
         }
 
-        // Render gallery based on mediaItems array
-       function renderGallery() {
+        function renderGallery() {
     galleryGrid.innerHTML = '';
 
     if (mediaItems.length === 0) {
@@ -1430,12 +1429,12 @@
         galleryItem.classList.add('gallery-item');
         galleryItem.dataset.id = item.id;
 
-        // Mark own files (optional)
+        // Highlight own uploads
         if (currentUser && item.userId === currentUser.uid) {
             galleryItem.classList.add('gallery-item-own');
         }
 
-        // Delete button (only for own items)
+        // Delete button (only for own items, <1 uur oud)
         if (
             currentUser &&
             item.userId === currentUser.uid &&
@@ -1459,6 +1458,85 @@
             });
             galleryItem.appendChild(deleteBtn);
         }
+
+        // Show media
+        if (item.fileType === 'image') {
+            const img = document.createElement('img');
+            img.src = item.fileURL;
+            img.alt = item.caption || 'Gallery image';
+            img.loading = 'lazy';
+            galleryItem.appendChild(img);
+        } else {
+            const video = document.createElement('video');
+            video.src = item.fileURL;
+            video.preload = 'metadata';
+            galleryItem.appendChild(video);
+
+            const playOverlay = document.createElement('div');
+            playOverlay.classList.add('play-overlay');
+            playOverlay.innerHTML = '▶';
+            galleryItem.appendChild(playOverlay);
+        }
+
+        // Overlay and actions
+        const overlay = document.createElement('div');
+        overlay.classList.add('gallery-item-overlay');
+
+        const info = document.createElement('div');
+        info.classList.add('gallery-item-info');
+        info.textContent = item.username || 'Anonymous';
+
+        const actions = document.createElement('div');
+        actions.classList.add('gallery-item-actions');
+
+        const likeBtn = document.createElement('button');
+        likeBtn.classList.add('like-btn');
+        likeBtn.innerHTML = `<span>♡</span> <span>${item.likes || 0}</span>`;
+
+        if (currentUser && userLikes.includes(item.id)) {
+            likeBtn.classList.add('liked');
+            likeBtn.querySelector('span:first-child').textContent = '♥';
+        }
+
+        const commentBtn = document.createElement('button');
+        commentBtn.classList.add('comment-btn');
+        commentBtn.innerHTML = `<span>💬</span> <span>${item.comments || 0}</span>`;
+
+        actions.appendChild(likeBtn);
+        actions.appendChild(commentBtn);
+
+        overlay.appendChild(info);
+        overlay.appendChild(actions);
+
+        galleryItem.appendChild(overlay);
+
+        // **Iedereen kan op elk item klikken om modal te openen**
+        galleryItem.addEventListener('click', (e) => {
+            // Alleen niet als je op een actieknop klikt
+            if (
+                e.target.closest('.like-btn') ||
+                e.target.closest('.comment-btn') ||
+                e.target.closest('.gallery-delete-btn')
+            ) {
+                return;
+            }
+            openMediaModal(item);
+        });
+
+        // Like & comment knoppen
+        likeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleLike(item.id);
+        });
+
+        commentBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            openMediaModal(item, true);
+        });
+
+        galleryGrid.appendChild(galleryItem);
+    });
+}
 
        function renderGallery() {
     galleryGrid.innerHTML = '';
